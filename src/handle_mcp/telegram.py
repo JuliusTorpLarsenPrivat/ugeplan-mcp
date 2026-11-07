@@ -303,6 +303,14 @@ async def _svar(chat_id: str, tekst: str) -> None:
         log.warning("Kunne ikke svare: %s", fejl)
 
 
+async def _videresend(fra_chat: str, navn: str, tekst: str) -> None:
+    """Vis svaret på de andre telefoner, fx "Julius: ingen fisk". Hver person har sin egen chat
+    med botten, så uden dette ser I ikke hinandens svar (Julius' ønske, efter Maja kom på)."""
+    for anden in chats():
+        if anden != fra_chat:
+            await _svar(anden, f"{navn}: {tekst}")
+
+
 BESTIL_VENTER = "bestil-venter"  # læses af madplan.gem_fra_vaerktoej, når den rettede plan gemmes
 BESTIL_EFTER_RETTELSE = "Modtaget. Claude retter planen efter jeres besked og lægger den så i kurven."
 
@@ -326,6 +334,7 @@ async def _godkendelse(chat_id: str, navn: str, tekst: str) -> bool:
             # rettelsen, som Claude ikke har lavet endnu, så den gamle plan må ikke fyldes i kurven.
             skriv(BESTIL_VENTER, {"tid": datetime.now(TIDSZONE).timestamp(), "navn": navn, "kode": ventende.kode, "i_alt": float(ventende.i_alt)})
             _gem_besked(navn, tekst)
+            await _videresend(chat_id, navn, tekst)
             await _svar(chat_id, BESTIL_EFTER_RETTELSE if claude_lytter() else IKKE_LYTTER)
             return True
         kode = ventende.kode  # "bestil" gælder den eneste plan, der venter
@@ -418,6 +427,7 @@ async def haandter(opdatering: dict) -> str | None:
         except Exception as fejl:  # noqa: BLE001  beskeden må aldrig gå tabt
             log.warning("Kunne ikke gemme ønsket i profilen: %s", fejl)
     _gem_besked(navn, tekst, husket=husket)
+    await _videresend(chat_id, navn, tekst)
     await _svar(chat_id, kvittering())
     return f"besked fra {navn} gemt" + (" (også i profilen)" if husket else "")
 

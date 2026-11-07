@@ -563,3 +563,26 @@ async def test_ugemenu_naar_claude_selv_fyldte_kurven(tg, monkeypatch):
     kode = (await server.gem_madplan("nemlig", ["Ons: Frikadeller"], [{"vare_id": "1", "navn": "x", "antal": 1, "pris": 1.0}]))["kode"]
     await server.fyld_kurv_fra_madplan(kode, f"OK {kode}")
     assert await telegram.send_ugemenu_hvis_mangler() and len(tg.html) == 1
+
+
+# --- I kan se hinandens svar (hver har sin egen chat med botten) ----------------------------
+
+
+async def test_svar_vises_paa_den_anden_telefon(tg):
+    par(tg, 1, 2)
+    await telegram.hent_og_haandter(0)
+    tg.sendt.clear()
+    tg.besked(1, "Ingen fisk i denne uge", navn="Julius")
+    await telegram.hent_og_haandter(0)
+    assert (2, "Julius: Ingen fisk i denne uge") in tg.sendt
+    assert not any(c == 1 and t.startswith("Julius:") for c, t in tg.sendt)  # ikke tilbage til afsenderen
+    assert [b["fra"] for b in telegram.beskeder()] == ["Julius"]  # Claude får det kun én gang
+
+
+async def test_menu_videresendes_ikke(tg, monkeypatch):
+    par(tg, 1, 2)
+    await telegram.hent_og_haandter(0)
+    tg.sendt.clear()
+    tg.besked(1, "menu", navn="Julius")
+    await telegram.hent_og_haandter(0)
+    assert not any(t.startswith("Julius:") for _, t in tg.sendt)

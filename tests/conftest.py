@@ -8,3 +8,7 @@ def egen_datamappe(tmp_path, monkeypatch):
     from handle_mcp import ugeplan
 
     monkeypatch.setattr(ugeplan, "HENT_ORDRER", False)
+    monkeypatch.setattr(ugeplan, "HENT_LEVERING", False)
+    from handle_mcp import telegram as _tg
+
+    monkeypatch.setattr(_tg, "HENT_LEVERING", False)

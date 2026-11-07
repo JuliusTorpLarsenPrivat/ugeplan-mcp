@@ -148,6 +148,36 @@ def klokkeslaet(dag: str | None, start: str | None, slut: str | None) -> tuple[d
     return a, (b if b > a else b + timedelta(days=1))  # natlevering går over midnat
 
 
+def leveringstider_fra_svar(data: dict, gebyr: Any, nu: datetime, dage: int = 7) -> list[Leveringstid]:
+    """AvailableDeliveryDates. Fristen står kun som tekst ("i morgen kl. 15:00"), regnet fra `nu`."""
+    from handle_mcp import levering
+
+    sidste = nu.date() + timedelta(days=dage - 1)
+    tider = []
+    for dag in data.get("availableIntervals") or []:
+        for iv in dag.get("intervals") or []:
+            tt = klokkeslaet(dag.get("date"), iv.get("intervalStart"), iv.get("intervalEnd"))
+            if not tt or tt[0].date() > sidste:
+                continue
+            info = re.sub(r"<[^>]+>", "", " ".join(m.get("message", "") for m in iv.get("info") or [])).strip()
+            frist = levering.frist_fra_tekst(iv.get("orderBeforeTime"), nu) or levering.frist_fra_tekst(
+                (re.search(r"senest ([^,]+)", info) or [None, None])[1], nu
+            )
+            tider.append(
+                Leveringstid(
+                    butik="bilka",
+                    start=tt[0],
+                    slut=tt[1],
+                    pris=gebyr,
+                    ledig=not iv.get("closed") and bool(1 & (iv.get("availability_bit") or 0)),
+                    type="Nat" if tt[0].hour < 6 else None,
+                    note=info or None,
+                    frist=frist,
+                )
+            )
+    return tider
+
+
 class _Afvist(ButikFejl):
     """Bilka svarede 200 OK, men med en fejlbesked i svaret."""
 
@@ -290,26 +320,7 @@ class Bilka:
         if not er_hjemlevering(kurv_data.get("deliveryAddress") or {}):
             raise ButikFejl(IKKE_HJEMLEVERING)
         gebyr = kurv_fra_svar(kurv_data).gebyrer.get("levering")
-        sidste = datetime.now(DK).date() + timedelta(days=dage - 1)
-        tider = []
-        for dag in data.get("availableIntervals") or []:
-            for iv in dag.get("intervals") or []:
-                tt = klokkeslaet(dag.get("date"), iv.get("intervalStart"), iv.get("intervalEnd"))
-                if not tt or tt[0].date() > sidste:
-                    continue
-                info = re.sub(r"<[^>]+>", "", " ".join(m.get("message", "") for m in iv.get("info") or [])).strip()
-                tider.append(
-                    Leveringstid(
-                        butik="bilka",
-                        start=tt[0],
-                        slut=tt[1],
-                        pris=gebyr,
-                        ledig=not iv.get("closed") and bool(1 & (iv.get("availability_bit") or 0)),
-                        type="Nat" if tt[0].hour < 6 else None,
-                        note=info or None,
-                    )
-                )
-        return tider
+        return leveringstider_fra_svar(data, gebyr, datetime.now(DK), dage)
 
     async def ordrer(self, antal: int = 10) -> list[Ordre]:
         data = await self._shop("POST", "shop/v7/OrderHistory", {"limit": antal, "offset": 0, "muah": 1, "ordertype": "dibs,pgw"})

@@ -25,6 +25,7 @@ log = logging.getLogger(__name__)
 RAEKKEFOLGE = (
     "handle_mcp.lokal",
     "handle_mcp.data",
+    "handle_mcp.levering",
     "handle_mcp.persondata",
     "handle_mcp.vagt",
     "handle_mcp.login",

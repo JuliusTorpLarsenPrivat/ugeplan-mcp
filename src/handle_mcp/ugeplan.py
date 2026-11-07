@@ -53,8 +53,22 @@ SVARENE ER OFTE INDTALT
 - Diktering giver fejl og ingen tegnsætning (fx "en halv tær" kan være en halv tærte eller en
   halv tærtedej). Gæt det mest sandsynlige ud fra sammenhængen, og skriv gættet i menubeskeden
   i stedet for at stille et ekstra spørgsmål.
-- Mangler startdagen, så regn med dagen efter den første mulige levering, og skriv det i
-  menubeskeden. Spørg kun, hvis svaret er helt uklart.
+- Mangler startdagen, så start ved `foerste_aftensmad` i `levering` fra ugeplan_forloeb
+  (første aftensmad, varerne kan nå; varer, der kommer senest kl. 17, rækker til samme aften).
+  Spørg kun, hvis svaret er helt uklart.
+
+LEVERING OG STARTDAG (Julius: søndag kl. 12 ligger der mad til resten af søndag)
+- `levering` fra ugeplan_forloeb siger pr. butik: første aftensmad, leveringstid, bestil
+  senest og pris. Brug det, regn aldrig selv på frister eller "dagen efter levering".
+- Planen starter tidligst ved den første aftensmad. Aftenerne før (`klarer_jer_selv`)
+  klarer husstanden med det, de har: skriv det i én linje i menubeskeden, fx "Søndag klarer I
+  med det, I har". Det, de nævner i køleskabet, er det, der er TILBAGE, når varerne kommer.
+- Skriv i menubeskeden én linje om levering, fx "Levering mandag kl. 7-14, bestil senest
+  søndag kl. 14". Er der `naas_fristen_ikke`, så tilføj kort reserven ("ellers mandag kl.
+  15-17, bestil senest søndag kl. 24").
+- Siger husstanden en senere startdag, så brug den. Siger de en tidligere, end varerne kan nå,
+  så sig det og foreslå den første mulige.
+- Kun hjemlevering, aldrig afhentning.
 
 TRIN 2: MENUEN (uden priser, men med et prisskøn)
 3. Find retterne på vores opskriftssider (Valdemarsro, Arla, DR Mad, Madens Verden, HelloFresh,
@@ -112,9 +126,10 @@ TRIN 4: BESTIL
 10. "bestil" (eller "ok"/"ja") fylder kurven/kurvene og giver besked. Vent på svaret og fortæl,
     hvad der skete. Kommer der rettelser i stedet, så ret, gem en ny plan med gem_madplan (den
     gamle annulleres selv) og send den nye total.
-11. Når kurven er fyldt: slå leveringstider op og send ét forslag til levering, dagen før
-    planens første dag (fx "Lever lørdag 15/11 mellem 17 og 20, maden starter søndag"). Skriv,
-    at de selv vælger tiden og betaler i butikkens app.
+11. Når kurven er fyldt, sender botten selv ugemenuen og et leveringsforslag (den billigste
+    tid, der når planens første aftensmad, og hvornår der senest skal bestilles). Send ikke dit
+    eget forslag på Telegram. Uden Telegram: slå leveringstider op og foreslå én tid efter
+    reglerne i LEVERING OG STARTDAG. De vælger selv tiden og betaler i butikkens app.
 12. Retter de i kurven bagefter, så ret med saet_antal_i_kurv og tjek med vis_kurv, at
     kurven er præcis, som den skal være (også at fjernede varer er væk), før du skriver, at
     det er gjort. Bed aldrig husstanden rette kurven selv. Kan noget ikke lade sig gøre, så
@@ -287,6 +302,40 @@ async def _hent_ordrer() -> None:
         pass
 
 
+async def _hent_levering() -> dict:
+    """Første mulige aftensmad pr. butik (se levering.py). Fejler en butik, er den bare ikke med."""
+    import asyncio
+    from datetime import datetime
+
+    from handle_mcp import butikker as butik_modul
+    from handle_mcp import levering
+
+    async def en(navn: str) -> tuple[str, dict | None]:
+        try:
+            tider = await asyncio.wait_for(butik_modul.hent_butik(navn).leveringstider(5), 25)
+        except Exception:  # noqa: BLE001
+            return navn, None
+        return navn, levering.bedste(tider, datetime.now(levering.DK))
+
+    return {n: v for n, v in await asyncio.gather(*(en(n) for n in ("nemlig", "bilka"))) if v}
+
+
+def foerste_spoergsmaal(lev: dict) -> str:
+    """Spørgsmålet med den første aften, varerne kan nå (Julius: søndag kl. 12 ligger der mad
+    til resten af søndag, så det er det, der er tilbage, når varerne kommer, der tæller)."""
+    if not lev:
+        return FOERSTE_SPOERGSMAAL
+    tidligst = min(lev.values(), key=lambda v: v["dato"])
+    return FOERSTE_SPOERGSMAAL.replace(
+        "1) Hvad skal bruges denne uge?",
+        f"Varerne kan tidligst være her til aftensmaden {tidligst['foerste_aftensmad']}.\n"
+        "1) Hvad har I, der stadig skal bruges, når varerne kommer?",
+    )
+
+
+HENT_LEVERING = True  # slås fra i testene (ingen rigtige butikskald)
+
+
 async def start() -> dict:
     """Start madplanen: send det første spørgsmål på Telegram, hvis det er sat op."""
     try:
@@ -295,11 +344,12 @@ async def start() -> dict:
         pass
     if HENT_ORDRER:
         await _hent_ordrer()
+    lev = await _hent_levering() if HENT_LEVERING else {}
     if telegram_klar():
         tidligere = _beskeder_siden_sidst()
         try:
-            n = await telegram.send_til_alle(FOERSTE_SPOERGSMAAL)
+            n = await telegram.send_til_alle(foerste_spoergsmaal(lev))
         except telegram.TelegramFejl as fejl:
-            return {"telegram": f"kunne ikke sende ({fejl})", "beskeder_siden_sidst": tidligere, "forloeb": tekst_chat()}
-        return {"telegram": f"spørgsmålet er sendt til {n} telefon(er)", "beskeder_siden_sidst": tidligere, "forloeb": tekst_telegram(n)}
-    return {"telegram": "ikke sat op", "forloeb": tekst_chat()}
+            return {"telegram": f"kunne ikke sende ({fejl})", "beskeder_siden_sidst": tidligere, "levering": lev, "forloeb": tekst_chat()}
+        return {"telegram": f"spørgsmålet er sendt til {n} telefon(er)", "beskeder_siden_sidst": tidligere, "levering": lev, "forloeb": tekst_telegram(n)}
+    return {"telegram": "ikke sat op", "levering": lev, "forloeb": tekst_chat()}

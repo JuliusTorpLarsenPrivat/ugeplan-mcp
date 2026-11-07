@@ -510,5 +510,46 @@ async def send_ugemenu_hvis_mangler() -> bool:
         return False
     if await send_ugemenu(p):
         madplan.marker_menu_sendt(p.kode)
+        try:
+            await send_leveringsforslag(p)
+        except Exception as fejl:  # noqa: BLE001  menuen er sendt; forslaget må ikke vælte det
+            log.warning("Leveringsforslaget kunne ikke sendes: %s", fejl)
         return True
     return False
+
+
+HENT_LEVERING = True  # slås fra i testene (ingen rigtige butikskald)
+
+
+async def send_leveringsforslag(p: madplan.Madplan, tider: dict | None = None, nu: datetime | None = None) -> bool:
+    """Når kurven er fyldt: hvornår varerne skal komme for at nå planens første aftensmad, og
+    hvornår der senest skal bestilles (se levering.py). `tider` og `nu` kun til test."""
+    import asyncio
+
+    from handle_mcp import levering
+
+    nu = nu or datetime.now(TIDSZONE)
+    start = levering.planens_start(p.retter, datetime.fromisoformat(p.oprettet).date())
+    linjer = []
+    for navn in p.linjer_pr_butik():
+        if tider is not None:
+            butikkens = tider.get(navn, [])
+        elif HENT_LEVERING:
+            from handle_mcp import butikker as butik_modul
+
+            try:
+                butikkens = await asyncio.wait_for(butik_modul.hent_butik(navn).leveringstider(7), 25)
+            except Exception as fejl:  # noqa: BLE001
+                log.warning("Leveringstider fra %s kunne ikke hentes: %s", navn, fejl)
+                continue
+        else:
+            continue
+        if forslag := levering.til_plan(butikkens, nu, start):
+            linjer.append(levering.forslag_tekst(forslag))
+    if not linjer:
+        return False
+    tekst = "\n".join(linjer) + "\nI vælger selv tiden og betaler i appen."
+    for chat_id in chats():
+        await _svar(chat_id, tekst)
+    _gem_besked("handle-botten", tekst)  # så Claude kan se forslaget
+    return True

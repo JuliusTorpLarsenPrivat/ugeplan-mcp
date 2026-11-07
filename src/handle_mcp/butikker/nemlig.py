@@ -205,6 +205,7 @@ def leveringstider_fra_svar(data: dict) -> list[Leveringstid]:
                     ledig=t.get("Availability") == 0,  # 1 efter frist, 2 udsolgt, 3 ikke aktiv
                     type=LEVERINGSTYPE.get(t.get("Type")),
                     note=f"Bestil senest {frist:%d/%m kl. %H:%M}" if frist else None,
+                    frist=(frist if frist.tzinfo else frist.replace(tzinfo=DK)) if frist else None,
                 )
             )
     return tider

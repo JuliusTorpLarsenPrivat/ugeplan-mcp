@@ -68,6 +68,7 @@ class Leveringstid:
     ledig: bool
     type: str | None = None
     note: str | None = None
+    frist: datetime | None = None  # bestil senest (se levering.py)
 
 
 @dataclass

@@ -125,7 +125,8 @@ def _proev_parring(d: dict, chat_id: str, navn: str, tekst: str) -> bool:
     p = d.get("parring")
     if not p or datetime.fromisoformat(p["udloeber"]) < datetime.now(TIDSZONE):
         return False
-    if p["kode"] not in re.findall(r"\d{6}", tekst) or len(d["chats"]) >= MAKS_CHATS:
+    samlet = re.sub(r"(?<=\d)[\s.-]+(?=\d)", "", tekst)  # "674 170" og "674-170" tæller også
+    if p["kode"] not in re.findall(r"\d{6}", samlet) or len(d["chats"]) >= MAKS_CHATS:
         return False
     d["chats"][chat_id] = navn
     return True
@@ -397,7 +398,8 @@ async def haandter(opdatering: dict) -> str | None:
             skriv("telegram", d)
             await _svar(chat_id, f"Hej {navn}. Du er koblet på handle-botten. Du får ugeplanen her og kan svare med OK + koden.")
             return f"{navn} koblet på"
-        return "besked fra ukendt chat ignoreret"
+        tal = re.findall(r"\d+", tekst)  # kun tallene, så en forkert kode kan ses i loggen
+        return f"besked fra ukendt chat ignoreret ({len(tekst)} tegn, tal: {', '.join(tal) or 'ingen'})"
     if await _godkendelse(chat_id, navn, tekst):
         return f"godkendelse fra {navn} behandlet"
     if " ".join(tekst.lower().strip(" ?!.").split()) in MENU_ORD:

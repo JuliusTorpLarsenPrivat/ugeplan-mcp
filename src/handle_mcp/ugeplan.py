@@ -74,8 +74,10 @@ TRIN 2: MENUEN (uden priser, men med et prisskøn)
 4. Skøn prisen pr. ret ud fra hovedingredienserne og kendte priser (koebsmoenster, tidligere
    søgninger), og skøn de faste måltider for sig. Læg levering og poser til (nemlig ca. 36 kr
    levering + ca. 18 kr poser). Hold det samlede skøn under ugens budget.
-5. Send menuen kort: én linje pr. dag med ret, tid og skønnet pris, én linje med de faste
-   måltider og deres skøn, og det samlede skøn mod ugens budget. Tilføj BASISVARER (se
+5. Send menuen kort: én linje pr. dag med ret, tid og skønnet pris, én linje pr. fast
+   måltid med hvad det består af, antal dage og skøn, fx "Frokost 2 dage (lør, søn): rugbrød,
+   æg, avocado, tomat – ca. 110 kr". Ikke fordelt på dage (Julius: "bare hvad frokosterne
+   består af, og hvor mange dage"). Så det samlede skøn mod ugens budget. Tilføj BASISVARER (se
    nedenfor). Spørg: "Rettelser, eller er menuen god?" Vent på svaret.
 6. Ret menuen, til den er god. Beder de om en billigere plan, så skriv med det samme kort, hvad
    der er ændret, og hvad det sparer (fx "Tir: nakkekoteletter i stedet for mørbrad, −40 kr"),

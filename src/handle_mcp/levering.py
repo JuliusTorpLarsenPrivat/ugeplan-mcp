@@ -213,25 +213,28 @@ def til_plan(tider: list[Leveringstid], nu: datetime, start: date | None, margin
 def planens_start(retter: list[str], fra: date) -> date | None:
     """Første aften i planen ud fra "Tir: …", "Tir 10/11: …" eller "Fre 13/11 (4 pers.): …".
     Ugedage regnes fra `fra` (dagen planen blev lavet) og frem."""
-    dage = []
-    for ret in retter:
-        hoved = ret.split(":", 1)[0].strip().lower() if ":" in ret else ret.strip().lower()[:12]
-        if dato := re.search(r"\b(\d{1,2})/(\d{1,2})\b", hoved):
-            d, md = int(dato.group(1)), int(dato.group(2))
-            for aar in (fra.year, fra.year + 1):
-                try:
-                    kandidat = date(aar, md, d)
-                except ValueError:
-                    break
-                if kandidat >= fra - timedelta(days=1):
-                    dage.append(kandidat)
-                    break
-            continue
-        if m := re.match(r"(man|tir|ons|tor|fre|lør|lor|søn|son)", hoved):
-            nr = FORKORT.get(m.group(1).replace("lor", "lør").replace("son", "søn"))
-            if nr is not None:
-                dage.append(fra + timedelta(days=(nr - fra.weekday()) % 7))
+    dage = [d for ret in retter if (d := ret_dato(ret, fra))]
     return min(dage) if dage else None
+
+
+def ret_dato(ret: str, fra: date) -> date | None:
+    """Datoen for én ret: "Tir 10/11: …" giver 10/11, "Tir: …" den første tirsdag fra `fra`."""
+    hoved = ret.split(":", 1)[0].strip().lower() if ":" in ret else ret.strip().lower()[:12]
+    if dato := re.search(r"\b(\d{1,2})/(\d{1,2})\b", hoved):
+        d, md = int(dato.group(1)), int(dato.group(2))
+        for aar in (fra.year, fra.year + 1):
+            try:
+                kandidat = date(aar, md, d)
+            except ValueError:
+                return None
+            if kandidat >= fra - timedelta(days=1):
+                return kandidat
+        return None
+    if m := re.match(r"(man|tir|ons|tor|fre|lør|lor|søn|son)", hoved):
+        nr = FORKORT.get(m.group(1).replace("lor", "lør").replace("son", "søn"))
+        if nr is not None:
+            return fra + timedelta(days=(nr - fra.weekday()) % 7)
+    return None
 
 
 def forslag_tekst(f: dict) -> str:

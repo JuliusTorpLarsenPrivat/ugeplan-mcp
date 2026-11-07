@@ -60,9 +60,16 @@ SVARENE ER OFTE INDTALT
 LEVERING OG STARTDAG (Julius: søndag kl. 12 ligger der mad til resten af søndag)
 - `levering` fra ugeplan_forloeb siger pr. butik: første aftensmad, leveringstid, bestil
   senest og pris. Brug det, regn aldrig selv på frister eller "dagen efter levering".
-- Planen starter tidligst ved den første aftensmad. Aftenerne før (`klarer_jer_selv`)
-  klarer husstanden med det, de har: skriv det i én linje i menubeskeden, fx "Søndag klarer I
-  med det, I har". Det, de nævner i køleskabet, er det, der er TILBAGE, når varerne kommer.
+- Planen starter tidligst ved den første aftensmad. Aftenerne før klarer husstanden med det,
+  de har.
+- TRÆK SELV FRA, HVAD DE AFTENER BRUGER (Julius: "vi svarer hvad vi har i køleskabet, og du
+  tjekker selv hvad der bliver brugt"). `foer_levering` viser hver aften før levering og
+  retten fra den igangværende plan (og opskriften, hvis den findes). Det fra køleskabssvaret,
+  som den ret skal bruge, regner du som brugt: brug det ikke i den nye plan og gem det ikke i
+  beholdningen. Skriv én kort linje i menubeskeden, fx "Laks og kartofler går til søndagens
+  ret, så dem regner jeg ikke med". Spørg ikke om det; retter de, så ret.
+  Er `ret` null, og har de skrevet, hvad de spiser, så træk det fra på samme måde. Har de
+  ikke, så brug det, de nævner.
 - Skriv i menubeskeden én linje om levering, fx "Levering mandag kl. 7-14, bestil senest
   søndag kl. 14". Er der `naas_fristen_ikke`, så tilføj kort reserven ("ellers mandag kl.
   15-17, bestil senest søndag kl. 24").
@@ -320,17 +327,50 @@ async def _hent_levering() -> dict:
     return {n: v for n, v in await asyncio.gather(*(en(n) for n in ("nemlig", "bilka"))) if v}
 
 
-def foerste_spoergsmaal(lev: dict) -> str:
-    """Spørgsmålet med den første aften, varerne kan nå (Julius: søndag kl. 12 ligger der mad
-    til resten af søndag, så det er det, der er tilbage, når varerne kommer, der tæller)."""
+def foer_levering(lev: dict, nu=None) -> list[dict]:
+    """Aftenerne før varerne kommer, og hvad den igangværende plan siger, I skal have der.
+    Julius: "vi svarer hvad vi har i køleskabet, og du tjekker selv hvad der bliver brugt. Du
+    kender selv opskrifter og madplan". Claude trækker de varer fra, som de retter bruger."""
+    from datetime import date, datetime
+
+    from handle_mcp import levering, madplan
+
+    if not lev:
+        return []
+    nu = nu or datetime.now(levering.DK)
+    foerste = min(date.fromisoformat(v["dato"]) for v in lev.values())
+    try:
+        p = madplan.seneste_fyldte(14)
+    except LokalFejl:
+        p = None
+    ud = []
+    for d in levering.aftener_foer(foerste, nu):
+        ret = None
+        if p:
+            fra = datetime.fromisoformat(p.oprettet).date()
+            ret = next((r for r in p.retter if levering.ret_dato(r, fra) == d), None)
+        ud.append({"dag": levering.dag_tekst(d), "ret": ret, "opskrift": madplan.link_til(p, ret) if p and ret else None})
+    return ud
+
+
+def foerste_spoergsmaal(lev: dict, foer: list[dict] | None = None) -> str:
+    """Spørgsmålet med den første aften, varerne kan nå. De svarer bare, hvad de har; Claude
+    trækker selv fra, hvad aftenerne før levering bruger (se foer_levering)."""
     if not lev:
         return FOERSTE_SPOERGSMAAL
     tidligst = min(lev.values(), key=lambda v: v["dato"])
-    return FOERSTE_SPOERGSMAAL.replace(
+    tekst = FOERSTE_SPOERGSMAAL.replace(
         "1) Hvad skal bruges denne uge?",
         f"Varerne kan tidligst være her til aftensmaden {tidligst['foerste_aftensmad']}.\n"
-        "1) Hvad har I, der stadig skal bruges, når varerne kommer?",
+        "1) Hvad har I i køleskabet?",
     )
+    ukendte = [f["dag"].split()[0] for f in foer or [] if not f["ret"]]
+    if ukendte:  # ingen plan for de aftener: så kan Claude ikke selv vide, hvad der bliver brugt
+        tekst = tekst.replace(
+            "dem tjekker jeg med jer bagefter.",
+            f"dem tjekker jeg med jer bagefter. Ved I, hvad I spiser {' og '.join(ukendte)}, så skriv det også.",
+        )
+    return tekst
 
 
 HENT_LEVERING = True  # slås fra i testene (ingen rigtige butikskald)
@@ -345,11 +385,13 @@ async def start() -> dict:
     if HENT_ORDRER:
         await _hent_ordrer()
     lev = await _hent_levering() if HENT_LEVERING else {}
+    foer = foer_levering(lev)
+    faelles = {"levering": lev, "foer_levering": foer}
     if telegram_klar():
         tidligere = _beskeder_siden_sidst()
         try:
-            n = await telegram.send_til_alle(foerste_spoergsmaal(lev))
+            n = await telegram.send_til_alle(foerste_spoergsmaal(lev, foer))
         except telegram.TelegramFejl as fejl:
-            return {"telegram": f"kunne ikke sende ({fejl})", "beskeder_siden_sidst": tidligere, "levering": lev, "forloeb": tekst_chat()}
-        return {"telegram": f"spørgsmålet er sendt til {n} telefon(er)", "beskeder_siden_sidst": tidligere, "levering": lev, "forloeb": tekst_telegram(n)}
-    return {"telegram": "ikke sat op", "levering": lev, "forloeb": tekst_chat()}
+            return {"telegram": f"kunne ikke sende ({fejl})", "beskeder_siden_sidst": tidligere, **faelles, "forloeb": tekst_chat()}
+        return {"telegram": f"spørgsmålet er sendt til {n} telefon(er)", "beskeder_siden_sidst": tidligere, **faelles, "forloeb": tekst_telegram(n)}
+    return {"telegram": "ikke sat op", **faelles, "forloeb": tekst_chat()}

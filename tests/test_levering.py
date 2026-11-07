@@ -302,10 +302,51 @@ def test_hver_halve_time_i_to_uger(butik):
 
 def test_foerste_spoergsmaal_naevner_leveringen():
     lev = {"nemlig": levering.bedste(nemlig_tider(LOER), kl(SOEN, 12)), "bilka": levering.bedste(bilka_tider(LOER), kl(SOEN, 12))}
-    tekst = ugeplan.foerste_spoergsmaal(lev)
+    tekst = ugeplan.foerste_spoergsmaal(lev, [{"dag": "søndag 8/11", "ret": "Søn: Rådyrsteg", "opskrift": None}])
     assert "tidligst være her til aftensmaden mandag 9/11" in tekst
-    assert "1) Hvad har I, der stadig skal bruges, når varerne kommer?" in tekst
+    assert "1) Hvad har I i køleskabet?" in tekst
+    assert "spiser" not in tekst  # retten er kendt fra planen, så ingen ekstra spørgsmål
     assert ugeplan.foerste_spoergsmaal({}) == ugeplan.FOERSTE_SPOERGSMAAL
+
+
+def test_foerste_spoergsmaal_uden_plan_for_aftenen():
+    lev = {"nemlig": levering.bedste(nemlig_tider(LOER), kl(SOEN, 12))}
+    tekst = ugeplan.foerste_spoergsmaal(lev, [{"dag": "søndag 8/11", "ret": None, "opskrift": None}])
+    assert "Ved I, hvad I spiser søndag, så skriv det også." in tekst
+
+
+def _plan_fyldt(retter, opskrifter=None):
+    p = madplan.gem("nemlig", retter, [{"vare_id": "1", "navn": "x", "antal": 1, "pris": 1.0}], opskrifter=opskrifter)
+    madplan.saet_status(p.kode, "kurv fyldt", "test")
+    return p
+
+
+def test_foer_levering_finder_aftenens_ret_i_planen():
+    """Julius: "du tjekker selv hvad der bliver brugt, du kender selv opskrifter og madplan"."""
+    i_dag = datetime.now(DK).date()
+    fork = levering.UGEDAGE[i_dag.weekday()][:3].capitalize()
+    i_morgen = i_dag + timedelta(days=1)
+    _plan_fyldt(
+        [f"{fork} {i_dag.day}/{i_dag.month}: Laks med kartofler", f"{levering.UGEDAGE[i_morgen.weekday()][:3].capitalize()}: Lasagne"],
+        {f"{fork} {i_dag.day}/{i_dag.month}: Laks med kartofler": "https://www.valdemarsro.dk/laks/"},
+    )
+    lev = {"nemlig": {"dato": (i_dag + timedelta(days=2)).isoformat()}}
+    foer = ugeplan.foer_levering(lev, kl(i_dag, 12))
+    assert [f["ret"] for f in foer] == [f"{fork} {i_dag.day}/{i_dag.month}: Laks med kartofler", f"{levering.UGEDAGE[i_morgen.weekday()][:3].capitalize()}: Lasagne"]
+    assert foer[0]["opskrift"] == "https://www.valdemarsro.dk/laks/"
+    assert ugeplan.foer_levering(lev, kl(i_dag, 20))[0]["dag"] == levering.dag_tekst(i_morgen)  # i aften er spist
+
+
+def test_foer_levering_uden_plan():
+    i_dag = datetime.now(DK).date()
+    foer = ugeplan.foer_levering({"bilka": {"dato": (i_dag + timedelta(days=1)).isoformat()}}, kl(i_dag, 12))
+    assert foer == [{"dag": levering.dag_tekst(i_dag), "ret": None, "opskrift": None}]
+    assert ugeplan.foer_levering({}) == []
+
+
+def test_levering_samme_aften_ingen_aftener_foer():
+    i_dag = datetime.now(DK).date()
+    assert ugeplan.foer_levering({"nemlig": {"dato": i_dag.isoformat()}}, kl(i_dag, 9)) == []
 
 
 async def test_forslag_sendes_til_begge(tg):

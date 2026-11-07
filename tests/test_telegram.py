@@ -114,9 +114,21 @@ async def test_parring_og_fremmede_ignoreres(tg):
     par(tg, 1, 2)
     tg.besked(3, "123456", navn="Gætter")  # forkert kode
     haendelser = await telegram.hent_og_haandter(0)
-    assert haendelser == ["besked fra ukendt chat ignoreret", "person1 koblet på", "person2 koblet på", "besked fra ukendt chat ignoreret"]
+    assert haendelser == [
+        "besked fra ukendt chat ignoreret (16 tegn, tal: ingen)",
+        "person1 koblet på",
+        "person2 koblet på",
+        "besked fra ukendt chat ignoreret (6 tegn, tal: 123456)",  # kun tallene, aldrig teksten
+    ]
     assert telegram.chats() == {"1": "person1", "2": "person2"}
     assert {c for c, _ in tg.sendt} == {1, 2}  # fremmede får intet svar
+
+
+@pytest.mark.parametrize("tekst", ["674 170", "674-170", "Koden er 674170"])
+async def test_parring_med_mellemrum(tg, tekst):
+    kode = telegram.ny_parringskode()
+    tg.besked(5, tekst.replace("674170", kode).replace("674 170", f"{kode[:3]} {kode[3:]}").replace("674-170", f"{kode[:3]}-{kode[3:]}"), navn="Maja")
+    assert await telegram.hent_og_haandter(0) == ["Maja koblet på"]
 
 
 async def test_udloebet_parringskode_virker_ikke(tg):

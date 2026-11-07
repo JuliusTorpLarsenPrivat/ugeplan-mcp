@@ -64,10 +64,9 @@ TRIN 2: MENUEN (uden priser, men med et prisskøn)
    Brug vores egne varer (fx vildt fra fryseren) præcis som vi sagde: siger vi "rådyr
    lørdag", så kun lørdag, også selvom der er mere (fundet i en test: rådyr kom også tirsdag).
    Tager du noget fra den gemte fryser- eller skabsbeholdning, som vi IKKE har nævnt i denne
-   omgang, så skriv det efter retten, fx "(rådyr fra fryseren: skriv 'ikke rådyr', hvis den
-   ikke skal bruges i denne uge, eller 'rådyr er brugt', hvis den er spist)". Svarer vi 'er
-   brugt', så fjern den med opdater_beholdning. Ikke "sig til, hvis den skal blive" (uklart:
-   blive i fryseren eller i menuen?). Køleskabsvarer ældre end 7 dage er allerede fjernet.
+   omgang, så skriv kort efter retten, fx "(rådyr fra egen fryser)". Intet mere: ingen
+   forklaring (Julius). Siger vi, at den er brugt, så fjern den med opdater_beholdning.
+   Køleskabsvarer ældre end 7 dage er allerede fjernet.
    De faste måltider i profilen (fx morgenmad og weekendfrokost) hører med hver uge og regnes
    for HELE ugen frem til næste levering (7 dage), ikke kun de aftener, vi skal have
    aftensmad. "Morgenmad hver dag" = 7 morgener, "frokost lørdag og søndag" = begge dage

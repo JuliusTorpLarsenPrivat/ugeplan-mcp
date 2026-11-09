@@ -6,7 +6,7 @@ en adgangsnøgle:
 
     Authorization: Bearer <nøgle>
 
-Nøglen laves med `handle-mcp http-noegle`, gemmes i nøgleringen og vises kun den ene gang.
+Nøglen laves med `ugeplan-mcp http-noegle`, gemmes i nøgleringen og vises kun den ene gang.
 Som standard lytter serveren kun på 127.0.0.1 (denne maskine). Den må aldrig stilles åbent
 på internettet: brug et privat netværk som Tailscale.
 """
@@ -81,8 +81,8 @@ def koer(mcp: Any, host: str = "127.0.0.1", port: int = 8765) -> int:
 
     noegle = gemt_noegle()
     if not noegle:
-        print("Der er ingen adgangsnøgle endnu. Kør først: handle-mcp http-noegle")
+        print("Der er ingen adgangsnøgle endnu. Kør først: ugeplan-mcp http-noegle")
         return 1
-    print(f"handle-mcp lytter på http://{host}:{port}/mcp  (stop med Ctrl+C)")
+    print(f"ugeplan-mcp lytter på http://{host}:{port}/mcp  (stop med Ctrl+C)")
     uvicorn.run(app(mcp, noegle, host), host=host, port=port, log_level="warning")
     return 0

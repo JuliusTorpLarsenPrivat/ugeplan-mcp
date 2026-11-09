@@ -34,12 +34,13 @@ ANTAL AFTENER (fundet i test 3: kødsovsen blev talt som en ekstra aften)
   og gæsteaftenen. Læg aldrig en aften til for resterne. Er det uklart, hvilken dag der
   udgår, så vælg selv og skriv det i menubeskeden.
 
-ØKOLOGI (Julius: mere vægt på økologi)
-- Kød, fisk, mejeri, æg, grønt og basisvarer: vælg øko, når det findes, også når det koster
-  mere. Konventionelt kun når der ingen øko-udgave er, og så skriv det kort i prisbeskeden.
-- Kød er ALTID øko eller vores eget vildt. Findes der ingen øko-udgave af kødet til en ret
-  (fx hakket grise/kalv), så brug en anden øko-protein eller en anden ret (se NÅR EN RET IKKE
-  KAN KØBES ORDENTLIGT). Vælg aldrig konventionelt kød.
+PROFILENS KRAV ER KRAV (økologi, kød, fisk, mærker)
+- Følg profilens præferencer, undgaa og vareønsker præcis, også når det koster mere. Siger
+  profilen fx "økologi har høj prioritet", så vælg øko, når det findes, og skriv kort i
+  prisbeskeden, hvis en vare ikke fandtes som øko.
+- Er et krav absolut (fx "kød altid øko", "kun vildfanget fisk"), og kan varen ikke købes
+  sådan, så brug en anden protein eller en anden ret (se NÅR EN RET IKKE KAN KØBES
+  ORDENTLIGT). Bryd aldrig et absolut krav for at spare.
 
 UGENS BUDGET (regn det ud, før du laver menuen)
 - Profilens ugebudget_kr er for en hel uge (7 dage) til profilens antal personer.
@@ -57,13 +58,13 @@ SVARENE ER OFTE INDTALT
   (første aftensmad, varerne kan nå; varer, der kommer senest kl. 17, rækker til samme aften).
   Spørg kun, hvis svaret er helt uklart.
 
-LEVERING OG STARTDAG (Julius: søndag kl. 12 ligger der mad til resten af søndag)
+LEVERING OG STARTDAG (søndag kl. 12 ligger der ofte mad til resten af søndag)
 - `levering` fra ugeplan_forloeb siger pr. butik: første aftensmad, leveringstid, bestil
   senest og pris. Brug det, regn aldrig selv på frister eller "dagen efter levering".
 - Planen starter tidligst ved den første aftensmad. Aftenerne før klarer husstanden med det,
   de har.
-- TRÆK SELV FRA, HVAD DE AFTENER BRUGER (Julius: "vi svarer hvad vi har i køleskabet, og du
-  tjekker selv hvad der bliver brugt"). `foer_levering` viser hver aften før levering og
+- TRÆK SELV FRA, HVAD DE AFTENER BRUGER (husstanden svarer, hvad der er i køleskabet, og du
+  tjekker selv, hvad der bliver brugt). `foer_levering` viser hver aften før levering og
   retten fra den igangværende plan (og opskriften, hvis den findes). Det fra køleskabssvaret,
   som den ret skal bruge, regner du som brugt: brug det ikke i den nye plan og gem det ikke i
   beholdningen. Skriv én kort linje i menubeskeden, fx "Laks og kartofler går til søndagens
@@ -86,7 +87,7 @@ TRIN 2: MENUEN (uden priser, men med et prisskøn)
    lørdag", så kun lørdag, også selvom der er mere (fundet i en test: rådyr kom også tirsdag).
    Tager du noget fra den gemte fryser- eller skabsbeholdning, som vi IKKE har nævnt i denne
    omgang, så skriv kort efter retten, fx "(rådyr fra egen fryser)". Intet mere: ingen
-   forklaring (Julius). Siger vi, at den er brugt, så fjern den med opdater_beholdning.
+   forklaring. Siger vi, at den er brugt, så fjern den med opdater_beholdning.
    Køleskabsvarer ældre end 7 dage er allerede fjernet.
    De faste måltider i profilen (fx morgenmad og weekendfrokost) hører med hver uge og regnes
    for HELE ugen frem til næste levering (7 dage), ikke kun de aftener, vi skal have
@@ -97,8 +98,7 @@ TRIN 2: MENUEN (uden priser, men med et prisskøn)
    levering + ca. 18 kr poser). Hold det samlede skøn under ugens budget.
 5. Send menuen kort: én linje pr. dag med ret, tid og skønnet pris, én linje pr. fast
    måltid med hvad det består af, antal dage og skøn, fx "Frokost 2 dage (lør, søn): rugbrød,
-   æg, avocado, tomat – ca. 110 kr". Ikke fordelt på dage (Julius: "bare hvad frokosterne
-   består af, og hvor mange dage"). Så det samlede skøn mod ugens budget. Tilføj BASISVARER (se
+   æg, avocado, tomat – ca. 110 kr". Ikke fordelt på dage. Så det samlede skøn mod ugens budget. Tilføj BASISVARER (se
    nedenfor). Spørg: "Rettelser, eller er menuen god?" Vent på svaret.
 6. Ret menuen, til den er god. Beder de om en billigere plan, så skriv med det samme kort, hvad
    der er ændret, og hvad det sparer (fx "Tir: nakkekoteletter i stedet for mørbrad, −40 kr"),
@@ -168,7 +168,7 @@ Fundet i en test: alle laks i Bilka var enten opdrættede, frosne eller kunne ik
   hvorfor, og den nye total. Spørg kun først, hvis den nye total bliver over ugens budget,
   eller hvis husstanden selv har bedt om netop den ret.
 
-BASISVARER (Julius: "jeg regner med, I har …" er ikke godt nok)
+BASISVARER ("jeg regner med, I har …" er ikke godt nok)
 Gæt aldrig stille. Hver basisvare, som ugens retter og faste måltider skal bruge (æg, smør,
 mælk, fløde, citron, løg, hvidløg, mel, olie, sukker, salt, peber, bouillon, sennep, ris, pasta
 osv.), står i menubeskeden på én af to lister, så vi kan tjekke køleskab og skab, før der
@@ -176,7 +176,7 @@ handles, og ikke mangler noget midt i madlavningen:
   Køber til ugen: æg, kartofler, hakkede tomater, …
   Tjek, at I har: smør, mælk, citron, olivenolie, ris, …
   "Skriv 'har X' eller 'køb Y', hvis noget skal flyttes."
-  KUN varenavne, ingen begrundelser i parentes (Julius: listen blev lang og uoverskuelig).
+  KUN varenavne, ingen begrundelser i parentes (ellers bliver listen lang og uoverskuelig).
   Spørger de, hvad noget skal bruges til, så svar dem.
 Sådan fordeles de (brug koebsmoenster → basisvarer_pr_type og svaret om køleskabet):
 - Nævnt i svaret om køleskabet, eller i beholdningen → ingen af listerne (vi har det).
@@ -233,7 +233,7 @@ FORBEREDELSE = """FORBEREDELSE (stille, uden at spørge nogen)
    Gå `beskeder_siden_sidst` (beskeder sendt mellem madplanerne) og profilens fra_husstanden
    igennem efter ØNSKER TIL FREMOVER, og ryd op i profilen, før du laver menuen.
    Tjek begge kurve med vis_kurv. Ligger der varer fra før, så skriv det her i chatten til
-   Julius (ikke på Telegram) og spørg, om de skal tømmes. Fundet i test 4: en gammel
+   brugeren (ikke på Telegram) og spørg, om de skal tømmes. Fundet i test 4: en gammel
    Bilka-kurv kom tilbage, fordi bilkatogo.dk stod åben i browseren med den gamle kurv."""
 
 
@@ -250,7 +250,7 @@ VIGTIGT: Al snak med husstanden foregår på Telegram, så de kan svare fra tele
   leveringsforslaget) kalder du vent_paa_svar igen og bliver ved, til der har været 20
   minutter uden svar. Først da skriver du opsummeringen her i chatten og stopper. Ellers
   bliver deres næste svar ikke læst (fundet i demoen: "Gem i profilen" blev aldrig læst).
-- Her i chatten skriver du kun korte statuslinjer til Julius, fx "Venter på svar om køleskabet".
+- Her i chatten skriver du kun korte statuslinjer til brugeren, fx "Venter på svar om køleskabet".
 
 {FORBEREDELSE}
 
@@ -271,7 +271,7 @@ snakken med husstanden foregår her i chatten.
 
 TRIN 1: KØLESKABET
 2. Spørg kort, hvad vi har i køleskabet, og om der er noget særligt denne uge (gæster,
-   aftener ude, vildt fra Julius).{spoerg_antal} Gem svaret med opdater_beholdning.
+   aftener ude, egne råvarer som vildt).{spoerg_antal} Gem svaret med opdater_beholdning.
 {FAELLES}"""
 
 

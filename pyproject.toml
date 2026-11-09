@@ -1,10 +1,12 @@
 [project]
-name = "handle-mcp"
-version = "0.27.0"
-description = "MCP-server til nemlig.com og BilkaToGo: søg, sammenlign og fyld kurven. Du betaler altid selv."
+name = "ugeplan-mcp"
+version = "0.28.0"
+description = "Ugens madplan for hele husstanden via Telegram, med kurven fyldt hos nemlig.com eller BilkaToGo. Du betaler altid selv."
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "Julius Torp Larsen" }]
+keywords = ["mcp", "claude", "madplan", "nemlig", "bilkatogo", "telegram", "dagligvarer"]
+
 requires-python = ">=3.12"
 dependencies = [
     "mcp>=2.3,<3",
@@ -13,8 +15,12 @@ dependencies = [
     "tzdata>=2024.1; sys_platform == 'win32'",  # tidszoner (Europe/Copenhagen) findes ikke i Windows
 ]
 
+[project.urls]
+Repository = "https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp"
+
 [project.scripts]
-handle-mcp = "handle_mcp.server:main"
+ugeplan-mcp = "handle_mcp.server:main"
+handle-mcp = "handle_mcp.server:main"  # det gamle navn virker stadig
 
 [dependency-groups]
 dev = ["pytest>=8", "pytest-asyncio>=0.24"]

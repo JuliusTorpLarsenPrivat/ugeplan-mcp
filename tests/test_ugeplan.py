@@ -113,7 +113,8 @@ async def test_forloebet_fra_tredje_test(tg):
     kobl_paa(1)
     f = (await server.ugeplan_forloeb())["forloeb"]
     assert "ERSTATTER køleskabsdelen" in f and "MEDREGNET retter af det, vi har hjemme" in f
-    assert "Kød er ALTID øko eller vores eget vildt" in f
+    assert "Bryd aldrig et absolut krav for at spare" in f  # profilens krav, fx kød altid øko
+    assert "Julius" not in f  # generelt forløb: husstandens egne regler ligger i profilen
 
 
 async def test_forloebet_har_basisvarelister(tg):

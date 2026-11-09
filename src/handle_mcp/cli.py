@@ -1,14 +1,14 @@
 """Kommandoer i terminalen:
 
-    handle-mcp login nemlig    spørger om email og kode, tjekker dem hos butikken og gemmer dem
-    handle-mcp logout nemlig   sletter det gemte login
-    handle-mcp status          viser hvilke butikker der har et gemt login (aldrig selve koden)
-    handle-mcp telegram-opsaet gemmer jeres Telegram-bot og giver en kode til at koble telefoner på
-    handle-mcp telegram [timer] lytter efter jeres svar (standard 24 timer). "OK UGE-xxxx" fylder kurven
-    handle-mcp telegram-par    ny kode til at koble en telefon på
-    handle-mcp telegram-frakobl kobler alle telefoner fra
-    handle-mcp http-noegle     laver en ny adgangsnøgle til HTTP-tilstand (vises kun én gang)
-    handle-mcp http [host] [port]
+    ugeplan-mcp login nemlig    spørger om email og kode, tjekker dem hos butikken og gemmer dem
+    ugeplan-mcp logout nemlig   sletter det gemte login
+    ugeplan-mcp status          viser hvilke butikker der har et gemt login (aldrig selve koden)
+    ugeplan-mcp telegram-opsaet gemmer jeres Telegram-bot og giver en kode til at koble telefoner på
+    ugeplan-mcp telegram [timer] lytter efter jeres svar (standard 24 timer). "OK UGE-xxxx" fylder kurven
+    ugeplan-mcp telegram-par    ny kode til at koble en telefon på
+    ugeplan-mcp telegram-frakobl kobler alle telefoner fra
+    ugeplan-mcp http-noegle     laver en ny adgangsnøgle til HTTP-tilstand (vises kun én gang)
+    ugeplan-mcp http [host] [port]
                                kører serveren over HTTP i stedet for til Claude Desktop.
                                Standard: 127.0.0.1 8765 (kun denne maskine)
 """
@@ -41,7 +41,7 @@ async def _telegram_opsaet(fra_udklipsholder: bool = False) -> int:
     else:
         print("1. Åbn Telegram, skriv til @BotFather, send /newbot og følg trinene.")
         print("2. Indsæt den botnøgle, du får (den vises ikke, mens du skriver), og tryk Enter.")
-        print("   Driller det? Kopiér nøglen og kør i stedet: handle-mcp telegram-opsaet udklipsholder")
+        print("   Driller det? Kopiér nøglen og kør i stedet: ugeplan-mcp telegram-opsaet udklipsholder")
         raa = getpass.getpass("Botnøgle: ")
     # Find selve nøglen, så ekstra tegn fra indsættelsen ikke ødelægger den
     fund = re.findall(r"\d{5,15}:[A-Za-z0-9_-]{30,50}", raa)
@@ -59,7 +59,7 @@ async def _telegram_opsaet(fra_udklipsholder: bool = False) -> int:
         return 1
     kode = telegram.ny_parringskode()
     print(f"\nBotten {navn} er gemt i Windows' nøglering.")
-    print(f"3. Start lytteren: handle-mcp telegram")
+    print(f"3. Start lytteren: ugeplan-mcp telegram")
     print(f"4. Søg {navn} frem i Telegram på begge telefoner og send koden {kode} (gyldig i 30 minutter).")
     return 0
 
@@ -161,7 +161,7 @@ def kommando(args: list[str]) -> int:
             try:
                 timer = float(rest[0]) if rest else 24.0
             except ValueError:
-                print("Antal timer skal være et tal, fx: handle-mcp telegram 12")
+                print("Antal timer skal være et tal, fx: ugeplan-mcp telegram 12")
                 return 1
             return asyncio.run(_telegram_lyt(timer))
         case ["http-noegle"]:
@@ -178,7 +178,7 @@ def kommando(args: list[str]) -> int:
             try:
                 port = int(rest[1]) if len(rest) == 2 else 8765
             except ValueError:
-                print("Porten skal være et tal, fx: handle-mcp http 127.0.0.1 8765")
+                print("Porten skal være et tal, fx: ugeplan-mcp http 127.0.0.1 8765")
                 return 1
             return netvaerk.koer(mcp, host, port)
         case _:

@@ -36,7 +36,7 @@ def hent(butik: str) -> tuple[str, str]:
     if gemt:
         data = json.loads(gemt)
         return data["email"], data["kode"]
-    raise IntetLogin(f"Intet login til {butik}. Kør i en terminal: handle-mcp login {butik}")
+    raise IntetLogin(f"Intet login til {butik}. Kør i en terminal: ugeplan-mcp login {butik}")
 
 
 def gem(butik: str, email: str, kode: str) -> None:

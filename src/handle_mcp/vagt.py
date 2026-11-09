@@ -1,12 +1,12 @@
 """Vagten: den eneste vej ud på nettet.
 
-Hvert eneste HTTP-kald i handle-mcp går gennem en klient fra `ny_klient()`. Inden kaldet
+Hvert eneste HTTP-kald i ugeplan-mcp går gennem en klient fra `ny_klient()`. Inden kaldet
 sendes, tjekker vagten to ting:
 
 1. At adressen hører til en af de få værter, vi kender (butikkerne og deres login/søgning).
    Alt andet afvises. Så kan dit login aldrig ende et ukendt sted, heller ikke ved en fejl.
 2. At stien ikke indeholder ord for bestilling, betaling eller ændring af levering.
-   handle-mcp må kun læse og ændre antal i kurven. Mennesket betaler altid selv.
+   ugeplan-mcp må kun læse og ændre antal i kurven. Mennesket betaler altid selv.
 
 Vagten er bevidst dum og streng: hellere et kald for meget afvist end et for lidt.
 """
@@ -64,7 +64,7 @@ def tjek_url(url: httpx.URL) -> None:
     sti = url.path.lower()
     for ord_ in FORBUDTE_ORD:
         if ord_ in sti:
-            raise VagtFejl(f"Afvist: handle-mcp må aldrig kalde '{ord_}'.")
+            raise VagtFejl(f"Afvist: ugeplan-mcp må aldrig kalde '{ord_}'.")
 
 
 async def _foer_kald(request: httpx.Request) -> None:

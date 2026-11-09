@@ -1,3 +1,3 @@
-"""handle-mcp: dagligvarer fra nemlig.com og BilkaToGo som MCP-server. Du betaler altid selv."""
+"""ugeplan-mcp: madplan og dagligvarer fra nemlig.com og BilkaToGo som MCP-server. Du betaler altid selv."""
 
 __version__ = "0.27.0"

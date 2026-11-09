@@ -61,7 +61,7 @@ def _ny_kode() -> None:
     try:
         genindlaes.tjek()
     except Exception as fejl:  # noqa: BLE001  fx en tastefejl i en fil, der lige er gemt
-        raise ToolError(f"Ny kode i handle-mcp kunne ikke indlæses, så intet er ændret: {type(fejl).__name__}: {fejl}") from None
+        raise ToolError(f"Ny kode i ugeplan-mcp kunne ikke indlæses, så intet er ændret: {type(fejl).__name__}: {fejl}") from None
 
 
 def vaerktoej(annotations: ToolAnnotations):

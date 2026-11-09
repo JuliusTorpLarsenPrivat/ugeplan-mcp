@@ -3,7 +3,7 @@
 Claude Desktop laver stadig al tænkningen. Botten er bare postbudet:
   - Claude sender spørgsmål og ugeplan til jer med send_besked.
   - Jeres svar gemmes lokalt, og Claude læser dem med vis_beskeder.
-  - Lytteren (`handle-mcp telegram`, kører i en terminal) svarer selv på "OK UGE-xxxx": den
+  - Lytteren (`ugeplan-mcp telegram`, kører i en terminal) svarer selv på "OK UGE-xxxx": den
     fylder kurven med præcis den godkendte plan og siger til, når I kan betale.
 
 Sikkerhed:
@@ -58,7 +58,7 @@ def hent_token() -> str:
     except keyring.errors.KeyringError:
         token = None
     if not token:
-        raise TelegramFejl("Telegram er ikke sat op. Kør i en terminal: handle-mcp telegram-opsaet")
+        raise TelegramFejl("Telegram er ikke sat op. Kør i en terminal: ugeplan-mcp telegram-opsaet")
     return token
 
 
@@ -284,7 +284,7 @@ async def send_til_alle(tekst: str) -> int:
         raise TelegramFejl(f"Beskeden er for lang (højst {MAKS_TEGN} tegn).")
     modtagere = chats()
     if not modtagere:
-        raise TelegramFejl("Ingen telefoner er koblet på botten endnu. Kør: handle-mcp telegram-opsaet")
+        raise TelegramFejl("Ingen telefoner er koblet på botten endnu. Kør: ugeplan-mcp telegram-opsaet")
     for chat_id in modtagere:
         await api("sendMessage", chat_id=int(chat_id), text=tekst)
     _gem_besked(SENDT_AF, tekst, laest=True)  # så hele samtalen kan læses bagefter

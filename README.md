@@ -127,7 +127,7 @@ Python-pakken hedder internt stadig `handle_mcp`, og kommandoen `handle-mcp` vir
 
 ## Tak
 
-Inspireret af [NJohansen/handle-mcp](https://github.com/NJohansen/handle-mcp) af Niclas Johansen, som viste, at nemlig og BilkaToGo kan bruges fra en AI-agent.
+Inspireret af [NJohansen/handle-mcp](https://github.com/NJohansen/handle-mcp) af Niclas Johansen, som viste, at nemlig og BilkaToGo kan bruges fra en AI-agent. Kendskabet til butikkernes API'er bygger delvist på hans research. Koden er skrevet fra bunden.
 
 ## Licens
 

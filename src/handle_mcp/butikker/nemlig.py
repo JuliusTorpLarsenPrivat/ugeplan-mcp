@@ -213,6 +213,7 @@ def leveringstider_fra_svar(data: dict) -> list[Leveringstid]:
 
 class Nemlig:
     navn = "nemlig"
+    priser_som_gaest = True  # søgning, tilbud og opskrifter virker uden login (se _kald)
 
     def __init__(self) -> None:
         self._klient = ny_klient()
@@ -280,12 +281,18 @@ class Nemlig:
         await self._nye_tokens()  # tokens skifter efter login
         self._logget_ind = True
 
-    async def _kald(self, metode: str, url: str, **kw: Any) -> Any:
-        """Et kald som logget ind. Ved 401: nyt token, og ellers nyt login."""
+    async def _kald(self, metode: str, url: str, gaest_ok: bool = False, **kw: Any) -> Any:
+        """Et kald som logget ind. Ved 401: nyt token, og ellers nyt login.
+        `gaest_ok`: søgning, tilbud og opskrifter virker også uden login (som gæst), så man kan
+        bruge dem uden en nemlig-konto. Kurv, levering og ordrer kræver altid login."""
         async with self._laas:
             if not self._logget_ind:
-                await self.log_ind()
-        for redning in (self._nye_tokens, self.log_ind):
+                if gaest_ok and not login.har_login(self.navn):
+                    if not self._token:
+                        await self._nye_tokens()
+                else:
+                    await self.log_ind()
+        for redning in (self._nye_tokens, self.log_ind) if self._logget_ind else (self._nye_tokens,):
             try:
                 return await self._raa(metode, url, **kw)
             except _Udloebet:
@@ -299,8 +306,8 @@ class Nemlig:
         """Søgning og priser afhænger af leveringszone og valgt tid. Gemmes i 10 minutter."""
         if self._indstillinger and time.monotonic() - self._indstillinger[0] < 600:
             return self._indstillinger[1]
-        app = await self._kald("GET", f"{SIDE}/webapi/v2/AppSettings/Website") or {}
-        b = await self._kald("GET", f"{SIDE}/webapi/basket/GetBasket") or {}
+        app = await self._kald("GET", gaest_ok=True, url=f"{SIDE}/webapi/v2/AppSettings/Website") or {}
+        b = await self._kald("GET", gaest_ok=True, url=f"{SIDE}/webapi/basket/GetBasket") or {}
         rammer = {
             "timestamp": app.get("CombinedProductsAndSitecoreTimestamp", ""),
             "timeslotUtc": b.get("TimeslotUtc", ""),
@@ -316,7 +323,7 @@ class Nemlig:
         r = await self._rammer()
         params = {"query": tekst, "take": antal, "skip": 0, "recipeCount": 0}
         params |= {k: r[k] for k in ("timestamp", "timeslotUtc", "deliveryZoneId")}
-        data = await self._kald("GET", SOEG, params=params)
+        data = await self._kald("GET", gaest_ok=True, url=SOEG, params=params)
         try:
             hits = data["Products"]["Products"]
         except (KeyError, TypeError):
@@ -327,7 +334,7 @@ class Nemlig:
         params = {"path": "/tilbud"}
         if slot := (await self._rammer())["slot_id"]:
             params["timeslotId"] = slot
-        side = await self._kald("GET", f"{BFF}/page", params=params) or {}
+        side = await self._kald("GET", gaest_ok=True, url=f"{BFF}/page", params=params) or {}
         fundet: dict[str, Vare] = {}
         for blok in side.get("pageContent") or []:
             overskrift = str((blok.get("header") or {}).get("title") or "").strip()
@@ -388,7 +395,7 @@ class Nemlig:
     # --- Opskrifter ----------------------------------------------------------
 
     async def soeg_opskrifter(self, tekst: str, antal: int = 5) -> list[Opskrift]:
-        data = await self._kald("GET", f"{BFF}/search/recipes", params={"query": tekst, "take": antal, "skip": 0}) or {}
+        data = await self._kald("GET", gaest_ok=True, url=f"{BFF}/search/recipes", params={"query": tekst, "take": antal, "skip": 0}) or {}
         hits = (data.get("searchResult") or {}).get("items") or []
         return [Opskrift("nemlig", h["id"], h.get("title", ""), f"{SIDE}/maaltider/opskrift/{h['id']}") for h in hits[:antal] if h.get("id")]
 
@@ -399,8 +406,8 @@ class Nemlig:
         if personer:
             params["servings"] = personer
         detaljer, varer = await asyncio.gather(
-            self._kald("GET", f"{BFF}/meals/recipeDetails/{slug}"),
-            self._kald("GET", f"{BFF}/meals/recipeProductDialog", params=params),
+            self._kald("GET", gaest_ok=True, url=f"{BFF}/meals/recipeDetails/{slug}"),
+            self._kald("GET", gaest_ok=True, url=f"{BFF}/meals/recipeProductDialog", params=params),
         )
         detaljer, varer = detaljer or {}, varer or {}
         if "includedProducts" not in varer:

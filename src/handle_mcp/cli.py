@@ -1,6 +1,7 @@
 """Kommandoer i terminalen:
 
-    ugeplan-mcp login nemlig    spørger om email og kode, tjekker dem hos butikken og gemmer dem
+    ugeplan-mcp opsaet          guide til første opsætning: butikker, Telegram og Claude Desktop
+    ugeplan-mcp login nemlig   spørger om email og kode, tjekker dem hos butikken og gemmer dem
     ugeplan-mcp logout nemlig   sletter det gemte login
     ugeplan-mcp status          viser hvilke butikker der har et gemt login (aldrig selve koden)
     ugeplan-mcp telegram-opsaet gemmer jeres Telegram-bot og giver en kode til at koble telefoner på
@@ -114,23 +115,106 @@ async def _telegram_lyt(timer: float) -> int:
     return 0
 
 
+def _login(butik: str) -> int:
+    email = input(f"Email til {butik}: ").strip()
+    kode = getpass.getpass("Kode (vises ikke): ")
+    if not email or not kode:
+        print("Både email og kode skal udfyldes.")
+        return 1
+    login.gem(butik, email, kode)
+    try:
+        asyncio.run(hent_butik(butik).log_ind())
+    except Exception as fejl:  # noqa: BLE001  forkert login skal ikke blive liggende
+        login.slet(butik)
+        print(f"Login virkede ikke, så intet er gemt: {fejl}")
+        return 1
+    print(f"Login til {butik} virker og er gemt i styresystemets nøglering.")
+    return 0
+
+
+NAVNE = {"nemlig": "nemlig.com", "bilka": "BilkaToGo"}
+
+
+def _ja(spoergsmaal: str) -> bool:
+    try:
+        return input(f"{spoergsmaal} [j/N] ").strip().lower() in ("j", "ja", "y", "yes")
+    except EOFError:
+        print()
+        return False
+
+
+def claude_config() -> dict:
+    """Det, der skal stå i Claude Desktops claude_desktop_config.json."""
+    import shutil
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        v = version("ugeplan-mcp")
+    except PackageNotFoundError:
+        v = None
+    kilde = "git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp" + (f"@v{v}" if v else "")
+    uvx = shutil.which("uvx") or "uvx"
+    return {"mcpServers": {"ugeplan": {"command": uvx, "args": ["--from", kilde, "ugeplan-mcp"]}}}
+
+
+def _opsaet() -> int:
+    """Første opsætning, ét trin ad gangen. Alt kan springes over og tages senere."""
+    import json
+    import os
+
+    print("Velkommen til ugeplan-mcp. Tre korte trin, og alle kan springes over med Enter.\n")
+
+    print("TRIN 1/3: BUTIKKER")
+    print("Med login kan Claude fylde kurven (du betaler altid selv i butikkens app).")
+    print("Uden login virker nemligs priser og opskrifter stadig, men kurven kan ikke fyldes.")
+    for butik in login.BUTIKKER:
+        if login.har_login(butik):
+            print(f"  {NAVNE[butik]}: login er allerede gemt.")
+        elif _ja(f"  Har du en konto hos {NAVNE[butik]} med hjemlevering, som skal bruges?"):
+            while _login(butik) and _ja("  Prøv igen?"):
+                pass
+    if "bilka" in login.aktive():
+        print("  Husk: vælg hjemlevering én gang på bilkatogo.dk, ellers kan der ikke vises leveringstider.")
+
+    print("\nTRIN 2/3: TELEGRAM (valgfrit)")
+    print("Så kan hele husstanden svare fra telefonen: hvad der er i køleskabet, rettelser og \"bestil\".")
+    print("Uden Telegram foregår det hele i chatten med Claude.")
+    if _ja("  Skal I bruge Telegram?"):
+        asyncio.run(_telegram_opsaet())
+
+    print("\nTRIN 3/3: CLAUDE DESKTOP")
+    sti = os.path.join(os.environ.get("APPDATA", "~"), "Claude", "claude_desktop_config.json")
+    print("I Claude Desktop: Settings > Developer > Edit Config. Læg dette ind under \"mcpServers\"")
+    print(f"(filen ligger normalt i {sti}):\n")
+    print(json.dumps(claude_config(), indent=2, ensure_ascii=False))
+    print("\nGenstart Claude Desktop helt (også ikonet i proceslinjen).")
+
+    print("\nKLAR. Skriv \"lav madplan\" i Claude. Første gang stiller Claude et par korte spørgsmål om")
+    print("jeres husstand: antal, budget, hvad I kan lide og ikke spiser, faste måltider og")
+    print("bestemte varer. Det bliver gemt i jeres profil, kun på denne computer.")
+    print("Kør `ugeplan-mcp opsaet` igen, når som helst, eller `ugeplan-mcp status` for at se, hvad der er sat op.")
+    return 0
+
+
+def _sikker_udskrift() -> None:
+    """Windows-terminaler, der ikke kører UTF-8, må ikke få kommandoen til at gå ned på æ, ø
+    eller en pil (fundet ved første installation udefra)."""
+    import sys
+
+    for strøm in (sys.stdout, sys.stderr):
+        try:
+            strøm.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def kommando(args: list[str]) -> int:
+    _sikker_udskrift()
     match args:
+        case ["opsaet"] | ["setup"]:
+            return _opsaet()
         case ["login", butik] if butik in login.BUTIKKER:
-            email = input(f"Email til {butik}: ").strip()
-            kode = getpass.getpass("Kode (vises ikke): ")
-            if not email or not kode:
-                print("Både email og kode skal udfyldes.")
-                return 1
-            login.gem(butik, email, kode)
-            try:
-                asyncio.run(hent_butik(butik).log_ind())
-            except Exception as fejl:  # noqa: BLE001  forkert login skal ikke blive liggende
-                login.slet(butik)
-                print(f"Login virkede ikke, så intet er gemt: {fejl}")
-                return 1
-            print(f"Login til {butik} virker og er gemt i styresystemets nøglering.")
-            return 0
+            return _login(butik)
         case ["logout", butik] if butik in login.BUTIKKER:
             print("Slettet." if login.slet(butik) else "Der var intet gemt login.")
             return 0

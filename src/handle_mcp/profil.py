@@ -69,8 +69,19 @@ FELTER = {
 }
 
 
+def er_tom() -> bool:
+    """Første gang: intet om husstanden endnu. Så kører ugeplanen guiden først (ugeplan.py)."""
+    p = hent()
+    return p.personer is None and not (p.praeferencer or p.undgaa or p.faste_maaltider or p.ugebudget_kr)
+
+
 def vis() -> dict:
-    return {**asdict(hent()), "felter": FELTER}
+    return {
+        **asdict(hent()),
+        "felter": FELTER,
+        "gennemgang": "Beder brugeren om at gennemgå eller udfylde profilen, så tag 4 korte runder i "
+        "chatten: husstand og budget, smag og krav, faste måltider og varer, favoritter. Gem efter hver runde.",
+    }
 
 
 def opdater_fra_dict(aendringer: dict) -> Profil:

@@ -30,49 +30,39 @@ I kan se hinandens svar, og I behøver ikke vente på hinanden.
 - **Grundige varevalg.** Mængden tæller ("500 g hakket oksekød"), pakker og tilbud regnes ud, og rå varer foretrækkes frem for færdigretter, panerede eller frosne varer.
 - **Opskrifter fra danske sider:** Valdemarsro, Arla, DR Mad, Madens Verden, HelloFresh, Årstiderne og nemlig.
 
-## Det skal du bruge
+## Brug hele den eller kun dele af den
 
-- En Windows-pc. Mac og Linux burde virke, men er ikke testet.
-- [uv](https://docs.astral.sh/uv/) og [Git](https://git-scm.com/downloads).
-- [Claude Desktop](https://claude.ai/download).
-- En konto hos nemlig.com og/eller BilkaToGo med hjemlevering.
-- Telegram, hvis husstanden skal svare fra telefonen. Det er valgfrit, for det virker også i chatten.
+Kun Claude Desktop er et krav. Resten vælger du til.
 
-## Installér
+| Det har du | Det får du |
+|---|---|
+| Ingen butikskonto | Menu, opskrifter, indkøbsliste og nemligs priser (som gæst). Du handler selv. |
+| nemlig.com **eller** BilkaToGo | Det hele i den ene butik, inkl. fyldt kurv, levering og købsmønster. |
+| Begge butikker | Prissammenligning og deling mellem butikkerne, når det kan betale sig. |
+| + Telegram | Hele husstanden svarer fra telefonen. Uden Telegram foregår det i chatten. |
+| + andre MCP-servere | Fx data fra et sportsur, så maden følger træningen. Bruges, hvis de findes. |
 
-**1. Log ind i butikkerne.** Login gemmes kun i Windows' nøglering.
+Værktøjerne kan også bruges hver for sig uden ugeplanen, fx *"hvad koster den her indkøbsliste i nemlig og Bilka?"* eller *"find en lasagneopskrift og læg varerne i kurven"*.
+
+## Kom i gang
+
+Du skal bruge [Claude Desktop](https://claude.ai/download), [uv](https://docs.astral.sh/uv/getting-started/installation/) og [Git](https://git-scm.com/downloads). Testet på Windows. Mac og Linux burde virke.
+
+**1. Kør guiden** i en terminal. Den tager dig gennem butikker, Telegram og Claude Desktop, ét trin ad gangen, og alt kan springes over:
 
 ```powershell
-uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.28.0 ugeplan-mcp login nemlig
-uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.28.0 ugeplan-mcp login bilka
+uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.29.0 ugeplan-mcp opsaet
 ```
 
-**2. Kobl den på Claude Desktop:** Settings → Developer → Edit Config:
+Login gemmes kun i styresystemets nøglering. Guiden slutter med den tekst, du skal sætte ind i Claude Desktop (Settings > Developer > Edit Config).
 
-```json
-{
-  "mcpServers": {
-    "handle": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.28.0", "ugeplan-mcp"]
-    }
-  }
-}
-```
+**2. Genstart Claude Desktop helt**, også ikonet i proceslinjen.
 
-Finder Claude ikke `uvx`, så skriv hele stien, fx `C:\\Users\\<dig>\\.local\\bin\\uvx.exe`.
+**3. Skriv "lav madplan" i Claude.** Første gang stiller Claude 4 korte runder spørgsmål om jeres husstand: hvor mange I er og budget, hvad I kan lide og ikke spiser, faste måltider og bestemte varer, og jeres favoritretter. Svarene gemmes i profilen, og bagefter kommer ugens plan.
 
-**3. Genstart Claude Desktop helt**, også i proceslinjen. Hos BilkaToGo skal du vælge hjemlevering én gang på bilkatogo.dk.
+Profilen kan rumme alt fra "kød altid økologisk" til "chokolade mindst 85 %". Du ændrer den ved bare at sige det, fx *"husk, vi ikke kan lide fennikel"*, eller ved at skrive *"gennemgå vores profil"*.
 
-**4. Udfyld profilen.** Skriv i Claude: *"Sæt min profil op: vi er 2, budget 1500 kr om ugen, vi vil have øko, og vi spiser ikke svampe."*
-
-## Telegram (valgfrit, anbefalet)
-
-1. Skriv `/newbot` til @BotFather i Telegram, og kopiér botnøglen.
-2. Kør `ugeplan-mcp telegram-opsaet udklipsholder`. Nøglen gemmes i nøgleringen, og du får en parringskode.
-3. Send koden til botten fra hver telefon, der skal være med.
-
-Kun parrede telefoner kan skrive med botten. Botten lytter, mens Claude Desktop kører.
+Guiden kan køres igen når som helst. `ugeplan-mcp status` viser, hvad der er sat op.
 
 ## Værktøjer
 
@@ -103,13 +93,14 @@ Kun parrede telefoner kan skrive med botten. Botten lytter, mens Claude Desktop 
 - Alle kald går gennem `vagt.py`, som kun tillader butikkernes egne adresser og afviser alt, der ligner bestilling, betaling eller valg af levering.
 - Navn, adresse, telefon og e-mail fjernes fra svarene, før Claude ser dem.
 - Det, Claude ser, sendes til Anthropic som en del af samtalen.
-- Lås installationen til en version (`@v0.28.0`), så koden ikke ændrer sig uden din viden.
+- Lås installationen til en version (`@v0.29.0`), så koden ikke ændrer sig uden din viden.
 
 ## Begrænsninger
 
 - Uofficiel. Den bruger butikkernes egne hjemmeside-API'er og kan holde op med at virke uden varsel.
 - Ikke tilknyttet nemlig.com, Salling Group eller Anthropic.
 - Kun hjemlevering, ikke afhentning.
+- BilkaToGo kræver login. nemlig kan søges uden, men kurven kræver login.
 - Telegram-botten svarer kun, mens Claude Desktop kører. Til en maskine, der altid er tændt, se *Over netværket* nedenfor.
 
 ## Over netværket (HTTP)

@@ -4,6 +4,10 @@
 
 [![Tests](https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/licens-MIT-blue.svg)](LICENSE)
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
+![MCP](https://img.shields.io/badge/MCP-server-8A2BE2.svg)
+
+<img src="docs/forloeb.svg" alt="Én uge: 1 køleskabet, 2 menu, 3 pris, 4 bestil, 5 I betaler i butikkens app" width="100%">
 
 > **Den kan aldrig bestille eller betale.** Den kode findes ikke, en vagt blokerer kaldene, og testene fejler, hvis nogen prøver at tilføje dem.
 

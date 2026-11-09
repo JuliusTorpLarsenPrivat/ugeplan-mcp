@@ -11,6 +11,7 @@ og opdater aftrykket med:  HANDLE_MCP_NYT_AFTRYK=1 pytest tests/test_ingen_genst
 """
 
 import hashlib
+import inspect
 import json
 import os
 from pathlib import Path
@@ -20,11 +21,18 @@ from handle_mcp import server
 AFTRYK = Path(__file__).with_name("opstart_aftryk.json")
 
 
+def _uden_indrykning(v):
+    # Python 3.13+ fjerner selv docstringens indrykning, 3.12 gør ikke. Indholdet er det samme.
+    return inspect.cleandoc(v) if isinstance(v, str) else v
+
+
 async def _det_claude_desktop_laeser_ved_start() -> dict:
     vaerktoejer = {}
     for t in await server.mcp.list_tools():
         d = t.model_dump(mode="json", exclude_none=True)
         vaerktoejer[t.name] = {k: d.get(k) for k in ("description", "inputSchema", "input_schema", "annotations") if k in d}
+        if "description" in vaerktoejer[t.name]:
+            vaerktoejer[t.name]["description"] = _uden_indrykning(vaerktoejer[t.name]["description"])
     prompts = {p.name: p.model_dump(mode="json", exclude_none=True) for p in await server.mcp.list_prompts()}
     return {"instruktioner": server.mcp.instructions, "vaerktoejer": vaerktoejer, "prompts": prompts}
 
@@ -36,6 +44,9 @@ async def test_intet_der_kraever_genstart_er_aendret():
         AFTRYK.write_text(tekst, encoding="utf-8")
         return
     gemt = json.loads(AFTRYK.read_text(encoding="utf-8"))
+    for v in gemt["vaerktoejer"].values():
+        if "description" in v:
+            v["description"] = _uden_indrykning(v["description"])
     aendret = sorted(
         {n for n in set(nu["vaerktoejer"]) | set(gemt["vaerktoejer"]) if nu["vaerktoejer"].get(n) != gemt["vaerktoejer"].get(n)}
     )

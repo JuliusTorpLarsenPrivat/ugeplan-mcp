@@ -39,6 +39,19 @@ def hent(butik: str) -> tuple[str, str]:
     raise IntetLogin(f"Intet login til {butik}. Kør i en terminal: ugeplan-mcp login {butik}")
 
 
+def har_login(butik: str) -> bool:
+    try:
+        hent(butik)
+    except IntetLogin:
+        return False
+    return True
+
+
+def aktive() -> list[str]:
+    """De butikker, der er login til. Man kan sagtens bruge kun den ene (eller ingen)."""
+    return [b for b in BUTIKKER if har_login(b)]
+
+
 def gem(butik: str, email: str, kode: str) -> None:
     keyring.set_password(TJENESTE, butik, json.dumps({"email": email, "kode": kode}))
 

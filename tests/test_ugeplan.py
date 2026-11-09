@@ -130,7 +130,7 @@ async def test_forloebet_fra_fjerde_test(tg):
     f = (await server.ugeplan_forloeb())["forloeb"]
     assert "KUN varenavne, ingen begrundelser" in f and "Salt, peber og tørrede krydderier køber vi kun" in f
     assert "Skriv KUN ét beløb" in f and "skriv aldrig \"lidt stramt\"" in f
-    assert "skriv med det samme kort, hvad" in f and "Tjek begge kurve med vis_kurv" in f
+    assert "skriv med det samme kort, hvad" in f and "Tjek kurven i hver butik i `butikker` med vis_kurv" in f
 
 
 async def test_forloebet_tjekker_usikre_match_foer_butiksvalg(tg):

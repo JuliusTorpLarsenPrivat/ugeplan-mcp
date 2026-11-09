@@ -1,5 +1,12 @@
 # Ændringer
 
+## 0.29.0 (9/11-2026)
+
+- **Guide til første opsætning:** `ugeplan-mcp opsaet` tager butikker, Telegram og Claude Desktop ét trin ad gangen. Første "lav madplan" med en tom profil starter en kort samtale om husstanden.
+- **Brug kun det, du har:** én butik, ingen butik (nemligs priser og opskrifter som gæst), med eller uden Telegram og andre MCP-servere.
+- Rettet: `sammenlign_liste` fejlede helt, hvis der kun var login til den ene butik.
+- Rettet: kommandoerne gik ned i Windows-terminaler, der ikke kører UTF-8.
+
 ## 0.28.0 (9/11-2026)
 
 - Nyt navn: **ugeplan-mcp**. Kommandoen `handle-mcp` virker stadig.

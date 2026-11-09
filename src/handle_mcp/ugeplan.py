@@ -9,7 +9,7 @@ Teksten ligger her (ikke i server.py), så den kan rettes uden at genstarte Clau
 
 from __future__ import annotations
 
-from handle_mcp import beholdning, persondata, telegram
+from handle_mcp import beholdning, login, persondata, telegram
 from handle_mcp.lokal import LokalFejl
 
 FOERSTE_SPOERGSMAAL = (
@@ -24,6 +24,16 @@ FOERSTE_SPOERGSMAAL = (
 )
 
 FAELLES = """
+BUTIKKERNE (`butikker` fra ugeplan_forloeb: dem, der er login til)
+- Brug kun de butikker. Er der kun én, så prissæt og fyld kurven dér, og nævn ikke den anden.
+- Er der ingen, så virker nemligs søgning, tilbud, opskrifter og sammenlign_liste stadig som
+  gæst (priser uden gebyrer og minimumskøb), men kurven kan ikke fyldes. Lav menuen og en
+  indkøbsliste med mængder og priser, grupperet efter afdeling, og læg ca. 36 kr levering og
+  18 kr poser til. Trin 4 bliver: send listen, så de selv kan handle. Sig én gang kort, at
+  `ugeplan-mcp login nemlig` eller `login bilka` giver en fyldt kurv.
+- Mangler et værktøj eller en del (fx garmin, Telegram eller en butik), så spring den del over
+  uden at nævne det. Planen skal virke med det, der er sat op.
+
 SVARET OM KØLESKABET ER SANDHEDEN (fundet i test 3: en tærterest fra en anden uge kom med)
 - Det, de nævner i køleskabet, ERSTATTER køleskabsdelen af beholdningen: fjern med
   opdater_beholdning(fjern=[…]) de køleskabsvarer og rester, de ikke nævner. Fryser og skab
@@ -109,7 +119,7 @@ TRIN 2: MENUEN (uden priser, men med et prisskøn)
 TRIN 3: PRISEN
 7. Lav indkøbslisten ud fra opskrifternes ingredienser og de faste måltider, med mængder til
    vores antal personer og dage, minus det vi har hjemme (og det vi bekræftede i trin 2). Tag
-   alle basisvarer fra "Køber" med (se BASISVARER). Prissæt i begge butikker med sammenlign_liste (oekologisk
+   alle basisvarer fra "Køber" med (se BASISVARER). Prissæt i butikkerne med sammenlign_liste (oekologisk
    efter profilen). Overhold profilens vareønsker (fx kakaoprocent). Vær grundig: gå
    alternativerne igennem, søg igen på usikre linjer, og vælg ud fra pris, mængde og kvalitet.
 8. Følg `anbefaling` fra sammenlign_liste: én butik, eller begge, når det samlet er billigst med
@@ -232,7 +242,7 @@ FORBEREDELSE = """FORBEREDELSE (stille, uden at spørge nogen)
    garmin-værktøjerne, så tag dagsstatus og træninger 14 dage tilbage.
    Gå `beskeder_siden_sidst` (beskeder sendt mellem madplanerne) og profilens fra_husstanden
    igennem efter ØNSKER TIL FREMOVER, og ryd op i profilen, før du laver menuen.
-   Tjek begge kurve med vis_kurv. Ligger der varer fra før, så skriv det her i chatten til
+   Tjek kurven i hver butik i `butikker` med vis_kurv. Ligger der varer fra før, så skriv det her i chatten til
    brugeren (ikke på Telegram) og spørg, om de skal tømmes. Fundet i test 4: en gammel
    Bilka-kurv kom tilbage, fordi bilkatogo.dk stod åben i browseren med den gamle kurv."""
 
@@ -275,6 +285,50 @@ TRIN 1: KØLESKABET
 {FAELLES}"""
 
 
+FOERSTE_GANG = """FØRSTE GANG: LÆR HUSSTANDEN AT KENDE (profilen er tom)
+Lav IKKE madplanen endnu. Tag først en kort guide her i chatten, så planen passer til jer fra
+første uge. Profilen er det, der gør planerne gode, og den kan rumme alt fra budget til
+"chokolade mindst 85 %".
+
+Sådan:
+- Byd kort velkommen, og sig, at det tager ca. 3 minutter, og at alt kan springes over og
+  rettes senere ved bare at sige det ("husk, vi ikke spiser svampe").
+- Stil spørgsmålene i 4 runder, én runde pr. besked, med 2-3 konkrete eksempler hver gang, så
+  det er let at svare. Svar må gerne være korte eller indtalte.
+- GEM EFTER HVER RUNDE med opdater_profil (se felterne i vis_profil), så intet går tabt.
+  Skriv kravene præcist, så de kan følges: absolutte krav som "kød altid øko", ønsker som
+  "økologi når det er muligt".
+
+Runde 1, husstanden: Hvor mange er I (og børnenes alder, hvis der er børn)? Hvad må en uges mad
+  koste, inkl. levering? Ved de det ikke, så foreslå et beløb ud fra antal personer (og
+  koebsmoenster, hvis der er en butik med ordrer) → personer, ugebudget_kr.
+Runde 2, smag: Hvad kan I lide (madstil, køkkener, max tid på hverdage)? Hvad spiser I ikke
+  (allergier, intolerance, det I ikke kan lide)? Krav til økologi, kød, fisk eller kødfri dage?
+  → praeferencer, undgaa.
+Runde 3, det faste: Måltider, der er ens hver uge og skal med i indkøbet (morgenmad,
+  madpakker, weekendfrokost), med indhold og antal dage? Bestemte varer eller mærker
+  (fx "letmælk, ikke skummet", "kaffe: hele bønner")? → faste_maaltider, varepraeferencer.
+Runde 4, favoritter (valgfri): Retter, I altid er glade for? Har de et link, så gem dem med
+  hent_opskrift_fra_link og gem_opskrift; ellers som præference. Andet, jeg bør vide? → note.
+
+Til sidst: vis profilen kort som punkter, sig at den kan ændres når som helst, og spørg:
+"Skal jeg lave ugens madplan nu?" Ja → kald ugeplan_forloeb igen.
+Er Telegram sat op, så nævn, at resten af ugeplanen foregår der.
+{butikker}"""
+
+
+def tekst_foerste_gang(butikker: list[str]) -> str:
+    if butikker:
+        b = f"Butikker med login: {', '.join(butikker)}."
+    else:
+        b = (
+            "Der er ingen butik med login endnu. Sig til sidst kort, at priser og opskrifter fra "
+            "nemlig virker uden login, men at `ugeplan-mcp login nemlig` eller `login bilka` i en "
+            "terminal også fylder kurven."
+        )
+    return FOERSTE_GANG.format(butikker=b)
+
+
 def telegram_klar() -> bool:
     try:
         telegram.hent_token()
@@ -304,7 +358,7 @@ async def _hent_ordrer() -> None:
         from handle_mcp import butikker as butik_modul
         from handle_mcp import historik
 
-        await asyncio.wait_for(historik.hent_butiksordrer([butik_modul.hent_butik(n) for n in ("nemlig", "bilka")]), 25)
+        await asyncio.wait_for(historik.hent_butiksordrer([butik_modul.hent_butik(n) for n in login.aktive()]), 25)
     except Exception:  # noqa: BLE001
         pass
 
@@ -324,7 +378,7 @@ async def _hent_levering() -> dict:
             return navn, None
         return navn, levering.bedste(tider, datetime.now(levering.DK))
 
-    return {n: v for n, v in await asyncio.gather(*(en(n) for n in ("nemlig", "bilka"))) if v}
+    return {n: v for n, v in await asyncio.gather(*(en(n) for n in login.aktive())) if v}
 
 
 def foer_levering(lev: dict, nu=None) -> list[dict]:
@@ -374,10 +428,19 @@ def foerste_spoergsmaal(lev: dict, foer: list[dict] | None = None) -> str:
 
 
 HENT_LEVERING = True  # slås fra i testene (ingen rigtige butikskald)
+FOERSTE_GANG_AKTIV = True  # slås fra i de fleste tests, som har en tom profil
 
 
 async def start() -> dict:
-    """Start madplanen: send det første spørgsmål på Telegram, hvis det er sat op."""
+    """Start madplanen: send det første spørgsmål på Telegram, hvis det er sat op.
+    Første gang (tom profil) kører guiden i chatten i stedet, og intet sendes til Telegram."""
+    from handle_mcp import profil
+
+    try:
+        if FOERSTE_GANG_AKTIV and profil.er_tom():
+            return {"foerste_gang": True, "butikker": login.aktive(), "forloeb": tekst_foerste_gang(login.aktive())}
+    except LokalFejl:
+        pass
     try:
         beholdning.ryd_gammelt_koeleskab()  # gamle rester må ikke komme med i menuen
     except LokalFejl:
@@ -386,7 +449,7 @@ async def start() -> dict:
         await _hent_ordrer()
     lev = await _hent_levering() if HENT_LEVERING else {}
     foer = foer_levering(lev)
-    faelles = {"levering": lev, "foer_levering": foer}
+    faelles = {"butikker": login.aktive(), "levering": lev, "foer_levering": foer}
     if telegram_klar():
         tidligere = _beskeder_siden_sidst()
         try:

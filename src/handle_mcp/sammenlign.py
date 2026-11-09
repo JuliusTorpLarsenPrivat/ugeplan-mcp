@@ -29,6 +29,8 @@ from decimal import Decimal
 
 from handle_mcp.butikker import Butik, ButikFejl
 from handle_mcp.data import Vare
+from handle_mcp import login
+from handle_mcp.login import IntetLogin
 from handle_mcp.maengde import Maengde, behov, maengdetilbud, pakker, pakkestoerrelse, pris_for_antal
 
 ERSTAT = str.maketrans({"æ": "ae", "ø": "oe", "å": "aa", "é": "e"})
@@ -452,13 +454,18 @@ async def kandidater(butik: Butik, soegning: str, tilbud: list[Vare]) -> list[Va
 async def prissaet(butik: Butik, liste: list[tuple[str, int]], oeko: bool = False) -> Butiksresultat:
     res = Butiksresultat(butik.navn)
     try:
-        kurv = await butik.kurv()
-        res.gebyrer = {k: v for k, v in kurv.gebyrer.items() if k != "pant"}
+        try:
+            kurv = await butik.kurv()
+        except IntetLogin:  # gæst (fx nemlig uden konto): priser uden kurvens gebyrer og minimum
+            kurv = None
+            if not getattr(butik, "priser_som_gaest", False):
+                raise
+        res.gebyrer = {k: v for k, v in kurv.gebyrer.items() if k != "pant"} if kurv else {}
         # Gebyrer, der først kommer på, når der er varer i kurven (fundet i første rigtige uge:
         # nemlig tog 17,85 kr for poser, som ikke stod på den tomme kurv)
         for navn, beloeb in SENE_GEBYRER.get(butik.navn, {}).items():
             res.gebyrer.setdefault(navn, beloeb)
-        res.minimumskoeb = kurv.minimumskoeb
+        res.minimumskoeb = kurv.minimumskoeb if kurv else None
         tilbud = await hent_tilbud(butik)  # én gang pr. butik, ikke pr. vare
         for soegning, antal in liste:  # én ad gangen: vær flink ved butikken
             tekst, behov_ = behov(soegning)  # "500 g hakket oksekød" → søg "hakket oksekød"
@@ -467,7 +474,7 @@ async def prissaet(butik: Butik, liste: list[tuple[str, int]], oeko: bool = Fals
             # En forarbejdet vare er kun valgt, fordi der ikke var andet: den skal tjekkes
             sikker = score >= 1 and not (valgt and er_forarbejdet(valgt, ord_i(tekst)))
             res.linjer.append(Linje(soegning, antal, valgt, fundne[1:], sikker, behov_))
-    except ButikFejl as fejl:
+    except (ButikFejl, IntetLogin) as fejl:
         res.fejl = str(fejl)
     return res
 
@@ -476,6 +483,9 @@ async def sammenlign(butikker: list[Butik], liste: list[tuple[str, int]], oeko: 
     from handle_mcp.lokal import marker_claude_aktiv
 
     marker_claude_aktiv()  # prissætning tager minutter: botten skal vide, at Claude er i gang
-    """Butikkerne prissættes samtidig. Den billigste med flest fundne varer står først."""
+    """Butikkerne prissættes samtidig. Den billigste med flest fundne varer står først.
+    Butikker uden login springes over, når mindst én anden har login (mange har kun den ene)."""
+    med_login = [b for b in butikker if login.har_login(b.navn)]
+    butikker = med_login or butikker
     resultater = await asyncio.gather(*(prissaet(b, liste, oeko) for b in butikker))
     return sorted(resultater, key=lambda r: (r.fejl is not None, len(r.mangler), r.i_alt))

@@ -1,6 +1,6 @@
 [project]
 name = "ugeplan-mcp"
-version = "0.28.0"
+version = "0.29.0"
 description = "Ugens madplan for hele husstanden via Telegram, med kurven fyldt hos nemlig.com eller BilkaToGo. Du betaler altid selv."
 readme = "README.md"
 license = "MIT"

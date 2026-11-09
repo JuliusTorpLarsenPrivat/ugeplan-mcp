@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" font-family="Segoe UI, -apple-system, Helvetica, Arial, sans-serif">
+  <title>ugeplan-mcp: ugens madplan for hele husstanden</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1117"/>
+      <stop offset="1" stop-color="#132a1f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+
+  <text x="80" y="118" fill="#7ee2a8" font-size="24" font-weight="600" letter-spacing="1">OPEN SOURCE · MIT · MCP-SERVER TIL CLAUDE</text>
+  <text x="80" y="210" fill="#ffffff" font-size="92" font-weight="800">ugeplan-mcp</text>
+  <text x="80" y="272" fill="#c9d1d9" font-size="34">Ugens madplan for hele husstanden.</text>
+  <text x="80" y="316" fill="#c9d1d9" font-size="34">Fra køleskab til fyldt kurv, mens I svarer fra telefonen.</text>
+
+  <g font-size="22">
+    <g transform="translate(80,380)">
+      <rect width="208" height="120" rx="14" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+      <circle cx="34" cy="36" r="18" fill="#2f81f7"/><text x="34" y="44" fill="#fff" font-weight="700" text-anchor="middle">1</text>
+      <text x="22" y="92" fill="#e6edf3" font-weight="700" font-size="26">Køleskabet</text>
+    </g>
+    <g transform="translate(312,380)">
+      <rect width="208" height="120" rx="14" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+      <circle cx="34" cy="36" r="18" fill="#2f81f7"/><text x="34" y="44" fill="#fff" font-weight="700" text-anchor="middle">2</text>
+      <text x="22" y="92" fill="#e6edf3" font-weight="700" font-size="26">Menu</text>
+    </g>
+    <g transform="translate(544,380)">
+      <rect width="208" height="120" rx="14" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+      <circle cx="34" cy="36" r="18" fill="#2f81f7"/><text x="34" y="44" fill="#fff" font-weight="700" text-anchor="middle">3</text>
+      <text x="22" y="92" fill="#e6edf3" font-weight="700" font-size="26">Bedste pris</text>
+    </g>
+    <g transform="translate(776,380)">
+      <rect width="208" height="120" rx="14" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+      <circle cx="34" cy="36" r="18" fill="#2f81f7"/><text x="34" y="44" fill="#fff" font-weight="700" text-anchor="middle">4</text>
+      <text x="22" y="92" fill="#e6edf3" font-weight="700" font-size="26">"bestil"</text>
+    </g>
+    <g transform="translate(1008,380)">
+      <rect width="192" height="120" rx="14" fill="#12261e" stroke="#2ea043" stroke-width="2"/>
+      <circle cx="34" cy="36" r="18" fill="#2ea043"/><text x="34" y="44" fill="#fff" font-weight="700" text-anchor="middle">5</text>
+      <text x="22" y="92" fill="#e6edf3" font-weight="700" font-size="26">I betaler</text>
+    </g>
+    <g fill="#6e7681">
+      <path d="M306 440 l-12 -8 v16 z"/><path d="M538 440 l-12 -8 v16 z"/><path d="M770 440 l-12 -8 v16 z"/><path d="M1002 440 l-12 -8 v16 z"/>
+    </g>
+  </g>
+
+  <text x="80" y="566" fill="#8b949e" font-size="24">Claude  ·  Telegram  ·  nemlig.com  ·  BilkaToGo</text>
+  <text x="1200" y="566" fill="#8b949e" font-size="24" text-anchor="end">Den kan aldrig bestille eller betale</text>
+</svg>

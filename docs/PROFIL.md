@@ -34,9 +34,9 @@ Profilen er det, der gør madplanerne gode. Den fortæller AI-assistenten, hvem 
 
 **Gem favoritter.** Siger I, at en ret var god, gemmer assistenten den som favorit og tager den med igen senere, på skift.
 
-## Et eksempel: vores egen profil
+## Et eksempel
 
-Sådan ser profilen ud hos os, der har lavet ugeplan-mcp: et par, hvor den ene går på jagt. Linjerne markeret med (ekstra) har vi ikke selv, men de viser, hvad man også kan skrive.
+En opdigtet husstand: to voksne og et barn, hvor den ene går på jagt.
 
 ```text
 Personer: 2
@@ -50,21 +50,21 @@ Præferencer:
   - kun aftensmad på hverdage (frokost spises på arbejdet)
   - den ene af os er jæger og kommer af og til selv med vildtkød
   - gerne den samme ret to dage, hvis det er billigere at lave en stor portion
-  - vegetar mandag (ekstra)
-  - børnevenligt: ikke stærk mad (ekstra)
+  - vegetar mandag
+  - børnevenligt: ikke stærk mad
 Undgå:
   - opdrættet fisk (kun vildfanget)
   - fisk fra frost (kun fersk fisk)
   - kød fra frost (kun fersk kød; eget vildt fra fryseren er fint)
-  - nødder: allergi (ekstra)
+  - nødder: allergi
 Faste måltider:
   - Morgenmad hver dag, 2 pers.: græsk yoghurt med vindruer, mandler og mørk chokolade
   - Frokost kun lørdag og søndag hjemme (hverdage spiser vi på arbejdet)
-  - Madpakke til 1 barn mandag-fredag: rugbrød med pålæg og grøntsagsstave (ekstra)
+  - Madpakke til 1 barn mandag-fredag: rugbrød med pålæg og grøntsagsstave
 Vareønsker:
   - Mørk chokolade: meget mørk, mindst 85 %
-  - Mælk: økologisk letmælk, aldrig skummet (ekstra)
-  - Kaffe: hele bønner, mørkristet (ekstra)
+  - Mælk: økologisk letmælk, aldrig skummet
+  - Kaffe: hele bønner, mørkristet
 Aftensmad: 18:30
 Garmin: den af os, der går på jagt
 Note: Normal uge: 2 personer, aftensmad hjemme alle 7 dage, morgenmad hjemme alle dage,

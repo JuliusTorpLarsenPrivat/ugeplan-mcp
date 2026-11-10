@@ -1,5 +1,14 @@
 # Ændringer
 
+## Næste version
+
+- Rettet: BilkaToGo viste ikke, at en vare var frost. Nu står der "400 g / frost" som hos nemlig, og forløbet forbyder frost, når profilen siger "kun fersk".
+- Spørgsmålet om køleskabet beder om ca. mængder, og varer uden mængde kommer på "Tjek, at I har" med den mængde, ugen skal bruge.
+- Rettet: når kurven ikke kunne fyldes, så husstanden værktøjets instrukser til Claude på Telegram.
+- Rettet: Telegram-lytteren stoppede, når kurven var fyldt, så sene rettelser gik tabt. Den lytter nu videre.
+- Rettet: en plan lavet om søndagen med "Søn: …" sidst gav en forkert advarsel om levering, og en aften med rester talte som planens første dag med indkøb.
+- Rettet: ændringer i butikkernes kode slog først igennem efter en genstart af Claude Desktop.
+
 ## 0.29.0 (9/11-2026)
 
 - **Guide til første opsætning:** `ugeplan-mcp opsaet` tager butikker, Telegram og Claude Desktop ét trin ad gangen. Første "lav madplan" med en tom profil starter en kort samtale om husstanden.

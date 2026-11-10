@@ -210,10 +210,28 @@ def til_plan(tider: list[Leveringstid], nu: datetime, start: date | None, margin
 # --- planens første dag ------------------------------------------------------------
 
 
+def _uden_indkoeb(ret: str) -> bool:
+    """ "Man: Rester", "Lør: ingen aftensmad hjemme", "Man: Jeres kødsovs (har)"."""
+    efter = ret.split(":", 1)[-1].strip().lower()
+    if efter.startswith("rest"):
+        return " med " not in efter  # "Rest af chili med ris og avocado" skal bruge varer
+    return efter.startswith(("ingen ", "spiser ude", "ude")) or efter.endswith("(har)")
+
+
 def planens_start(retter: list[str], fra: date) -> date | None:
     """Første aften i planen ud fra "Tir: …", "Tir 10/11: …" eller "Fre 13/11 (4 pers.): …".
-    Ugedage regnes fra `fra` (dagen planen blev lavet) og frem."""
-    dage = [d for ret in retter if (d := ret_dato(ret, fra))]
+    Ugedage regnes fra `fra` (dagen planen blev lavet) og frem. Aftener med rester eller uden
+    mad hjemme tæller ikke: de skal ikke bruge varerne (fundet i uge 46: "Man: Rester" gav en
+    forkert advarsel om, at levering tirsdag var for sent)."""
+    # Dagene står i rækkefølge: "Man, Tir … Søn" lavet en søndag slutter NÆSTE søndag, ikke i dag
+    # (fundet i uge 46: "Søn: Rødspætte" blev til samme søndag, og advarslen sagde "starter søndag").
+    dage, forrige = [], fra
+    for ret in retter:
+        if (d := ret_dato(ret, forrige)) is None:
+            continue
+        forrige = d
+        if not _uden_indkoeb(ret):
+            dage.append(d)
     return min(dage) if dage else None
 
 

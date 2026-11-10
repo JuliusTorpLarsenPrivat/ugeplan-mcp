@@ -69,6 +69,15 @@ def kan_leveres(hit: dict, adresse_blockbit: int) -> bool:
     return not (int(hit.get("blockbit") or 0) & int(adresse_blockbit or 0))
 
 
+def maengde_fra_hit(hit: dict) -> str | None:
+    """Mængden, med "/ frost" som hos nemlig ("400 g / frost"). Fundet i brug, uge 46: Bilkas
+    "Rødspættefileter 400 g" er frost, men det stod kun i `properties`, så Claude kaldte dem friske."""
+    dele = [hit.get("netcontent") or ""]
+    if "Frost" in (hit.get("properties") or []):
+        dele.append("frost")
+    return " / ".join(d for d in dele if d) or None
+
+
 def vare_fra_hit(hit: dict, sid: str, adresse_blockbit: int = 0) -> Vare | None:
     """Ét Algolia-hit. Pris og lager står pr. butik under storeData[sid]. Top-feltet 'price'
     er normalprisen, storeData-prisen er det du betaler (tilbud medregnet)."""
@@ -87,7 +96,7 @@ def vare_fra_hit(hit: dict, sid: str, adresse_blockbit: int = 0) -> Vare | None:
         id=str(hit["objectID"]),
         navn=hit.get("name", ""),
         pris=nu,
-        maengde=hit.get("netcontent") or None,
+        maengde=maengde_fra_hit(hit),
         maerke=hit.get("brand") or None,
         enhedspris=kr(enhedspris) if enh and enhedspris else None,
         enhed={"ltr": "l"}.get(enh, enh),
@@ -255,7 +264,7 @@ class Bilka:
                 "hitsPerPage": antal,
                 "removeWordsIfNoResults": "allOptional",  # færre ord, hvis alle ord giver 0 hits
                 "filters": filtre,
-                "attributesToRetrieve": json.dumps(["name", "brand", "gtin", "netcontent", "price", "blockbit", f"storeData.{sid}"]),
+                "attributesToRetrieve": json.dumps(["name", "brand", "gtin", "netcontent", "properties", "price", "blockbit", f"storeData.{sid}"]),
             }
         )
         svar = await send(self._klient, "POST", ALGOLIA, headers=ALGOLIA_HEADERS, json={"requests": [{"indexName": ALGOLIA_INDEKS, "params": params}]})

@@ -240,7 +240,7 @@ def test_frist_kl_24():
         (["Tir: Kylling", "Ons: Shakshuka"], LOER, TIR),
         (["Lør 14/11: ingen aftensmad hjemme", "Fre 13/11 (4 pers.): Kylling"], LOER, date(2026, 11, 13)),
         (["Søn: Grågås"], SOEN, SOEN),
-        (["Fre 1/1: Rester"], date(2026, 12, 30), date(2027, 1, 1)),
+        (["Fre 1/1: Fiskefrikadeller"], date(2026, 12, 30), date(2027, 1, 1)),
         (["Kylling med kartofler"], LOER, None),
     ],
 )

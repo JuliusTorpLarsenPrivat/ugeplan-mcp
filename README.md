@@ -51,7 +51,7 @@ Du skal bruge [Claude Desktop](https://claude.ai/download), [uv](https://docs.as
 **1. Kør guiden** i en terminal. Den tager dig gennem butikker, Telegram og Claude Desktop, ét trin ad gangen, og alt kan springes over:
 
 ```powershell
-uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.30.0 ugeplan-mcp opsaet
+uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.31.0 ugeplan-mcp opsaet
 ```
 
 Login gemmes kun i styresystemets nøglering. Guiden slutter med den tekst, du skal sætte ind i Claude Desktop (Settings > Developer > Edit Config).
@@ -93,7 +93,7 @@ Guiden kan køres igen når som helst. `ugeplan-mcp status` viser, hvad der er s
 - Alle kald går gennem `vagt.py`, som kun tillader butikkernes egne adresser og afviser alt, der ligner bestilling, betaling eller valg af levering.
 - Navn, adresse, telefon og e-mail fjernes fra svarene, før Claude ser dem.
 - Det, Claude ser, sendes til Anthropic som en del af samtalen.
-- Lås installationen til en version (`@v0.30.0`), så koden ikke ændrer sig uden din viden.
+- Lås installationen til en version (`@v0.31.0`), så koden ikke ændrer sig uden din viden.
 
 ## Begrænsninger
 

@@ -1,6 +1,6 @@
 # Ændringer
 
-## Næste version
+## 0.34.1 (10/11-2026)
 
 - Rettet: `garmin-opsaet` gemmer den fulde sti til uv, så lytteren også finder den på macOS, hvor apps kun får en kort PATH.
 - Lytteren logger, når Garmin-niveauet ikke kan hentes (fejltype og personens navn, aldrig tal fra uret).

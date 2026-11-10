@@ -82,6 +82,15 @@ menuen blev ikke lavet om.
   - Samme hovedingrediens to dage med forskelligt tilbehør, fx 800 g hakket okse til kødsovs
     tirsdag og chili torsdag, eller 8 kyllingelår til ovnret og wok.
   - Samme tilbehør to dage med forskelligt kød, fx en stor portion ovnkartofler eller ris.
+- OPFIND IKKE NYE OPSKRIFTER. Byg parret af dele fra rigtige opskrifter (opskriftssiderne
+  eller vis_opskrifter): tilbehøret fra den ene og kødet fra den anden, eller kødet fra én og
+  tilbehør fra to andre. Julius: "så er det ikke dig, der opfinder opskrifter, men du
+  sammensætter blot et par dele af eksisterende opskrifter anderledes." Gem linket til den
+  opskrift, hver del kommer fra.
+- Skriv det tydeligt i menuen, så vi kan se det og lave dobbelt portion den første dag, fx:
+    "Man: Nakkekoteletter med ovnkartofler (lav dobbelt portion kartofler, til tirsdag)"
+    "Tir: Kyllingelår med ovnkartofler fra mandag"
+    "Tor: Kødsovs (lav dobbelt, halvdelen til lørdag) · Lør: Chili med kødsovsen fra torsdag"
 - Det skal stadig være god mad og passe til profilen. Den samme ret to gange kun, hvis vi har
   sagt, det er ok.
 - Friskt kød: de to dage ligger tæt (senest 2-3 dage efter levering), eller halvdelen fryses

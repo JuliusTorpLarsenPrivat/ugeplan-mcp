@@ -60,3 +60,9 @@ def test_pakke_der_allerede_dækker_to_retter():
     stor = vare("1", "Hele kyllingelår", 64.95, "1.6 kg")
     ln = Linje("600 g kyllingelår", 1, stor, [], True, Maengde(600, "g"), [stor])
     assert ln.dobbelt.startswith("Pakken (1.6 kg) dækker 1200 g: resten kan bruges til en ret mere")
+
+
+def test_parret_bygges_af_rigtige_opskrifter_og_står_tydeligt_i_menuen():
+    t = ugeplan.FAELLES
+    assert "OPFIND IKKE NYE OPSKRIFTER" in t and "lav dobbelt portion kartofler, til tirsdag" in t
+    assert "Gem linket til den" in t

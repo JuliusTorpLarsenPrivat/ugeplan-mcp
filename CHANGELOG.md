@@ -1,6 +1,6 @@
 # Ændringer
 
-## Næste version
+## 0.34.0 (10/11-2026)
 
 - **Agil plan efter træning** (kræver Garmin-data og en maskine, der er tændt):
   - Når planen laves, lægges energirige retter på de dage, I plejer at træne.

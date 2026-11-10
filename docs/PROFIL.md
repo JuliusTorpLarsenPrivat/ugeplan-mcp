@@ -39,7 +39,7 @@ Profilen er det, der gør madplanerne gode. Den fortæller AI-assistenten, hvem 
 En opdigtet husstand: to voksne og et barn, hvor den ene går på jagt.
 
 ```text
-Personer: 2
+Personer: 3
 Ugebudget: 1.200 kr
 Præferencer:
   - proteinrigt
@@ -58,7 +58,7 @@ Undgå:
   - kød fra frost (kun fersk kød; eget vildt fra fryseren er fint)
   - nødder: allergi
 Faste måltider:
-  - Morgenmad hver dag, 2 pers.: græsk yoghurt med vindruer, mandler og mørk chokolade
+  - Morgenmad hver dag, 2 voksne: græsk yoghurt med vindruer, mandler og mørk chokolade
   - Frokost kun lørdag og søndag hjemme (hverdage spiser vi på arbejdet)
   - Madpakke til 1 barn mandag-fredag: rugbrød med pålæg og grøntsagsstave
 Vareønsker:
@@ -67,7 +67,7 @@ Vareønsker:
   - Kaffe: hele bønner, mørkristet
 Aftensmad: 18:30
 Garmin: den af os, der går på jagt
-Note: Normal uge: 2 personer, aftensmad hjemme alle 7 dage, morgenmad hjemme alle dage,
+Note: Normal uge: 3 personer, aftensmad hjemme alle 7 dage, morgenmad hjemme alle dage,
       frokost hjemme kun lørdag og søndag. Budgettet gælder den uge.
 ```
 

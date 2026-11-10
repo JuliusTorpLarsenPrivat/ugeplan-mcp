@@ -1,6 +1,6 @@
 # Ændringer
 
-## Næste version
+## 0.35.0 (10/11-2026)
 
 - **Større pakker, færre penge:** `sammenlign_liste` siger i linjens `tip`, når dobbelt mængde af samme vare (større pakke eller mængdetilbud) er mindst 15 % billigere, eller når den valgte pakke allerede dækker to retter.
 - Forløbet planlægger efter det: én hovedingrediens til to retter med forskelligt tilbehør, eller samme tilbehør til to forskellige retter. Friskt kød ligger tæt eller fryses halvt, og fersk fisk deles aldrig.

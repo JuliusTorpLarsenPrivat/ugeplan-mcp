@@ -252,3 +252,16 @@ def test_garmin_fejl_logges(monkeypatch, caplog):
     with caplog.at_level("WARNING"):
         traening.hent_niveauer(datetime(2026, 11, 10).date())
     assert "FileNotFoundError" in caplog.text
+
+
+def test_niveauer_hentes_direkte_når_garmin_er_i_samme_pakke(monkeypatch):
+    """Uden garmin-opsaet: er garmin-delen installeret ([garmin]), hentes niveauet direkte."""
+    import sys
+    import types
+
+    profil.opdater(garmin=[{"navn": "Julius", "konto": "standard"}])
+    falsk = types.SimpleNamespace(belastning=lambda dag: {"personer": {"standard": {"niveau": "meget hård", "aktiviteter": []}}})
+    monkeypatch.setitem(sys.modules, "garmin_mcp.cli", falsk)
+    monkeypatch.setitem(sys.modules, "garmin_mcp", types.SimpleNamespace(cli=falsk))
+    monkeypatch.setattr(traening, "garmin_installeret", lambda: True)
+    assert traening.hent_niveauer(datetime(2026, 11, 10).date()) == {"Julius": {"niveau": "meget hård", "aktiviteter": []}}

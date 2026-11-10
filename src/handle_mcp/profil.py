@@ -29,7 +29,7 @@ class Profil:
     # Står her, til Claude har flyttet dem til det rette felt, så de aldrig bliver glemt.
     fra_husstanden: list[str] = field(default_factory=list)
     # Personer, der har sagt ja til, at madplanen bruger deres Garmin-data, fx
-    # [{"navn": "Julius", "konto": "standard"}]. "konto" er garmin-mcp's person (standard: navnet).
+    # [{"navn": "Anna", "konto": "standard"}]. "konto" er garmin-mcp's person (standard: navnet).
     garmin: list[dict] = field(default_factory=list)
     aftensmad: str = "18:30"  # hvornår I spiser; træning før/efter afgør, om i dag eller i morgen byttes
 
@@ -70,7 +70,7 @@ FELTER = {
     "faste_maaltider": "liste: måltider, der er de samme hver uge og skal med i indkøb og pris",
     "varepraeferencer": "liste: krav til bestemte varer, fx 'Mørk chokolade: mindst 85 %'",
     "fra_husstanden": "liste: ønsker, botten har gemt fra Telegram; send [] når de er flyttet",
-    "garmin": 'liste: personer, der har sagt ja til, at madplanen bruger deres Garmin-data, fx [{"navn": "Julius"}]; '
+    "garmin": 'liste: personer, der har sagt ja til, at madplanen bruger deres Garmin-data, fx [{"navn": "Anna"}]; '
     '"konto" kun hvis garmin-mcp-personen hedder noget andet; [] = ingen',
     "aftensmad": 'hvornår I spiser aftensmad, "TT:MM" (standard "18:30")',
 }
@@ -101,13 +101,13 @@ def opdater_fra_dict(aendringer: dict) -> Profil:
 
 def _garmin(personer: list) -> list[dict]:
     if not isinstance(personer, list) or len(personer) > 10:
-        raise LokalFejl('garmin skal være en liste af personer, fx [{"navn": "Julius"}].')
+        raise LokalFejl('garmin skal være en liste af personer, fx [{"navn": "Anna"}].')
     ud = []
     for x in personer:
         x = {"navn": x} if isinstance(x, str) else x
         navn = tekst((x or {}).get("navn"), "navn", 40) if isinstance(x, dict) else None
         if not navn:
-            raise LokalFejl('Hver Garmin-person skal have et navn, fx {"navn": "Julius"}.')
+            raise LokalFejl('Hver Garmin-person skal have et navn, fx {"navn": "Anna"}.')
         konto = tekst(x.get("konto"), "konto", 40)
         ud.append({"navn": navn, **({"konto": konto} if konto and konto != navn else {})})
     return ud

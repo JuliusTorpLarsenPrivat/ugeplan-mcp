@@ -1,6 +1,6 @@
 [project]
 name = "ugeplan-mcp"
-version = "0.36.0"
+version = "0.37.0"
 description = "Ugens madplan for hele husstanden via Telegram, med kurven fyldt hos nemlig.com eller BilkaToGo. Du betaler altid selv."
 readme = "README.md"
 license = "MIT"
@@ -15,12 +15,17 @@ dependencies = [
     "tzdata>=2024.1; sys_platform == 'win32'",  # tidszoner (Europe/Copenhagen) findes ikke i Windows
 ]
 
+[project.optional-dependencies]
+# Garmin-delen (agil madplan efter træning): pip/uv install "ugeplan-mcp[garmin]"
+garmin = ["garminconnect>=0.3.20,<0.4"]  # uofficielt Garmin-bibliotek: lås til 0.3.x, læs ændringer før opdatering
+
 [project.urls]
 Repository = "https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp"
 
 [project.scripts]
 ugeplan-mcp = "handle_mcp.server:main"
 handle-mcp = "handle_mcp.server:main"  # det gamle navn virker stadig
+garmin-mcp = "garmin_mcp.server:main"  # valgfri: kræver [garmin]
 
 [dependency-groups]
 dev = ["pytest>=8", "pytest-asyncio>=0.24"]
@@ -30,7 +35,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/handle_mcp"]
+packages = ["src/handle_mcp", "src/garmin_mcp"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

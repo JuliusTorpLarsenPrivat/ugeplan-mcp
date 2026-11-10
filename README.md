@@ -57,8 +57,8 @@ Intet kører i skyen. Alt kører på din egen maskine, og Telegram-botten svarer
 | En computer med AI-appen åben, når I laver madplan | Madplan, priser, kurv, opskrifter og profil. |
 | + Telegram | Husstanden svarer fra telefonen, mens planen laves. Beskeder imellem bliver hentet, når appen er åben igen, hvis de er under et døgn gamle (Telegrams grænse). |
 | + en maskine, der altid er tændt med appen åben (fx en Mac mini) | Botten svarer altid, og beholdningen kan opdateres fra telefonen hver dag. Intet går tabt. |
-| + Garmin-ur og en Garmin-MCP-server (min egen, garmin-mcp, er ikke offentlig endnu) | Menuen lægges efter jeres træningsmønster. |
-| + garmin-mcp med login på maskinen, der altid er tændt | **Agil plan efter træning:** botten foreslår at bytte retter, når en dag bliver hårdere eller roligere end planlagt. Se nedenfor. |
+| + Garmin-ur og Garmin-delen (`[garmin]`, se [docs/GARMIN.md](docs/GARMIN.md)) | Menuen lægges efter jeres træningsmønster, og AI'en kan se søvn, træning og skridt. |
+| + Garmin-login på maskinen, der altid er tændt | **Agil plan efter træning:** botten foreslår at bytte retter, når en dag bliver hårdere eller roligere end planlagt. Se nedenfor. |
 
 ### Agil plan efter træning
 
@@ -70,7 +70,7 @@ Med Garmin-data (kun for dem, der har sagt ja i profilen) følger planen den tr�
 - Fersk fisk flyttes aldrig, og noget, der skal tøs op, flyttes aldrig til i dag. Der kommer højst ét forslag om dagen, og kl. 20 en påmindelse, hvis noget skal op af fryseren til i morgen.
 - I ser kun "hård dag" eller "rolig dag", aldrig tal fra uret.
 
-Opsætning: log ind i garmin-mcp for hver person, kør `ugeplan-mcp garmin-opsaet <mappe med garmin-mcp>`, og sig til AI'en, hvem der må bruges, fx *"Julius må bruge sine Garmin-data"*. Uden Garmin opfører planen sig som altid.
+Opsætning: svar ja til Garmin i `ugeplan-mcp opsaet`, log ind én gang pr. person med `garmin-mcp login --person <navn>`, og sig til AI'en, hvem der må bruges, fx *"Anna må bruge sine Garmin-data"*. Detaljer og værktøjer: [docs/GARMIN.md](docs/GARMIN.md). Uden Garmin opfører planen sig som altid.
 
 ### Beholdningen fra telefonen
 
@@ -89,7 +89,7 @@ Du skal bruge en AI-app med MCP (se *Virker med*), [uv](https://docs.astral.sh/u
 **1. Kør guiden** i en terminal. Den tager dig gennem butikker, Telegram og din AI-app, ét trin ad gangen, og alt kan springes over:
 
 ```powershell
-uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.36.0 ugeplan-mcp opsaet
+uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.37.0 ugeplan-mcp opsaet
 ```
 
 Login gemmes kun i styresystemets nøglering. Til sidst vælger du din AI-app, og guiden viser præcis, hvad du skal sætte ind og hvor.
@@ -144,7 +144,7 @@ Forløbet er en lang samtale med mange værktøjskald. Jo bedre modellen er til 
 - Alle kald går gennem `vagt.py`, som kun tillader butikkernes egne adresser og afviser alt, der ligner bestilling, betaling eller valg af levering.
 - Navn, adresse, telefon og e-mail fjernes fra svarene, før AI'en ser dem.
 - Det, AI'en ser, sendes til den AI-udbyder, din app bruger (fx Anthropic, OpenAI eller GitHub), som en del af samtalen.
-- Lås installationen til en version (`@v0.36.0`), så koden ikke ændrer sig uden din viden.
+- Lås installationen til en version (`@v0.37.0`), så koden ikke ændrer sig uden din viden.
 
 ## Begrænsninger
 

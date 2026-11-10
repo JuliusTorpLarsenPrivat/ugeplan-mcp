@@ -16,8 +16,10 @@ retter, uden AI. Designet: design-agil-madplan-traening.md (godkendt af Julius 1
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
+import shutil
 import subprocess
 import time as _time
 from datetime import date, datetime, time, timedelta
@@ -26,6 +28,7 @@ from zoneinfo import ZoneInfo
 from handle_mcp import levering, madplan, profil
 from handle_mcp.lokal import laes, skriv
 
+log = logging.getLogger(__name__)
 TIDSZONE = ZoneInfo("Europe/Copenhagen")
 RANG = {n: i for i, n in enumerate(madplan.NIVEAUER)}  # rolig 0 … meget hård 3; "ukendt" tæller ikke
 HAARD = RANG["hård"]
@@ -48,7 +51,9 @@ def konfiguration() -> dict | None:
 
 def gem_konfiguration(mappe: str, venv: str | None = None) -> dict:
     k = {
-        "kommando": ["uv", "run", "python", "-m", "garmin_mcp.server", "belastning", "--alle", "--dato"],
+        # Fuld sti til uv: på macOS får programmer, som AI-appen starter, kun PATH=/usr/bin:/bin:…,
+        # så "uv" i ~/.local/bin bliver ikke fundet (fundet under Mac mini-opsætningen).
+        "kommando": [shutil.which("uv") or "uv", "run", "python", "-m", "garmin_mcp.server", "belastning", "--alle", "--dato"],
         "mappe": mappe,
         "miljoe": {"UV_LINK_MODE": "copy", **({"UV_PROJECT_ENVIRONMENT": venv} if venv else {})},
     }
@@ -70,17 +75,23 @@ def hent_niveauer(dag: date) -> dict[str, dict]:
     if not personer or not k:
         return {}
     miljoe = {**os.environ, **{n: _udvid(v) for n, v in (k.get("miljoe") or {}).items()}}
+    svar = None
     try:
         svar = subprocess.run(
             [*k["kommando"], dag.isoformat()], cwd=k.get("mappe") or None, env=miljoe, capture_output=True, text=True, encoding="utf-8", timeout=180
         )
         data = json.loads(svar.stdout or "{}")
-    except (OSError, subprocess.SubprocessError, ValueError):
+    except (OSError, subprocess.SubprocessError, ValueError) as fejl:
+        # Kun fejltypen og stderr's sidste linje i loggen, aldrig tal fra uret
+        sidst = (getattr(svar, "stderr", "") or "").strip().splitlines()[-1:] or [""]
+        log.warning("Garmin-niveau kunne ikke hentes (%s): %s", type(fejl).__name__, sidst[0][:200])
         return {p["navn"]: {"niveau": "ukendt"} for p in personer}
     alle = data.get("personer") or {}
     ud = {}
     for p in personer:
         d = alle.get(p.get("konto") or p["navn"]) or alle.get(p["navn"].lower()) or {}
+        if d.get("fejl") or not d:
+            log.warning("Garmin-niveau for %s mangler: %s", p["navn"], str(d.get("fejl") or "personen findes ikke i garmin-mcp")[:200])
         ud[p["navn"]] = d if d.get("niveau") else {"niveau": "ukendt"}
     return ud
 

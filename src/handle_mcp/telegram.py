@@ -323,6 +323,14 @@ def _rettelse_efter(oprettet: str) -> bool:
     )
 
 
+def ikke_fyldt_tekst(fejl: str) -> str:
+    """Til husstanden: hvorfor kurven ikke blev fyldt, uden værktøjets instrukser til Claude
+    (fundet i uge 46: "kald igen med kurven_maa_have_andet=True" stod på Majas telefon)."""
+    grund = re.split(r"\s+(?:Spørg brugeren|Kald igen|kald igen)", fejl, maxsplit=1)[0].strip()
+    videre = "Claude spørger jer om det her." if claude_lytter() else "Skriv fortsæt i Claude-chatten, så klarer Claude det."
+    return f"Kurven blev IKKE fyldt: {grund}\n{videre}"
+
+
 async def _godkendelse(chat_id: str, navn: str, tekst: str) -> bool:
     """Er beskeden et OK til en ventende plan? Så fyld kurven og svar. Ellers False."""
     koder = {f"UGE-{k}" for k in madplan.KODE_I_TEKST.findall(tekst.upper())}
@@ -349,7 +357,7 @@ async def _godkendelse(chat_id: str, navn: str, tekst: str) -> bool:
     try:
         svar = await server.fyld_kurv_fra_madplan(kode, tekst)
     except ToolError as fejl:
-        await _svar(chat_id, f"Kurven blev IKKE fyldt: {fejl}")
+        await _svar(chat_id, ikke_fyldt_tekst(str(fejl)))
         _gem_besked("handle-botten", f"{navn} prøvede at godkende {kode}, men kurven blev IKKE fyldt: {fejl}")
         return True
     antal = len(svar.get("lagt_i_kurven") or [])

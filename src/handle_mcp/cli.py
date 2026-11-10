@@ -89,6 +89,7 @@ async def _telegram_lyt(timer: float) -> int:
     genindlaes.start()
     slut = time.monotonic() + timer * 3600
     fejl_i_traek = 0
+    afsluttet = False
     while time.monotonic() < slut:
         try:  # ny kode uden at genstarte lytteren (som serveren, se genindlaes.py)
             if nye := genindlaes.tjek():
@@ -100,9 +101,11 @@ async def _telegram_lyt(timer: float) -> int:
                 print(f"{time.strftime('%H:%M')} Ugemenu sendt og fastgjort", flush=True)
         except Exception as fejl:  # noqa: BLE001
             print(f"{time.strftime('%H:%M')} Ugemenu kunne ikke sendes: {fejl}", flush=True)
-        if telegram.ugen_er_afsluttet(start):
-            print(f"{time.strftime('%H:%M')} Ugens plan er afsluttet. Lytteren stopper.", flush=True)
-            return 0
+        if not afsluttet and telegram.ugen_er_afsluttet(start):
+            # Lyt videre: fundet i uge 46 skrev Maja en rettelse 8 min. efter, at kurven var fyldt,
+            # og den gik tabt, fordi lytteren stoppede her. Nu bliver den gemt og besvaret.
+            afsluttet = True
+            print(f"{time.strftime('%H:%M')} Ugens plan er afsluttet. Lytter videre efter rettelser.", flush=True)
         try:
             for h in await telegram.hent_og_haandter(vent_sekunder=25):
                 print(f"{time.strftime('%H:%M')} {h}", flush=True)

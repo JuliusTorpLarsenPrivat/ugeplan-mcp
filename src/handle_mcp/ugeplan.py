@@ -15,7 +15,8 @@ from handle_mcp.lokal import LokalFejl
 FOERSTE_SPOERGSMAAL = (
     "Hej! Ny madplan på vej.\n"
     "1) Hvad skal bruges denne uge? Rester, friske varer der snart skal bruges, og det fra "
-    "fryseren I vil have brugt. Basisvarer (æg, mel, olie …) behøver I ikke nævne, dem tjekker "
+    "fryseren I vil have brugt. Skriv ca. hvor meget (fx 500 g kartofler, 3 æg, ½ l mælk), så "
+    "jeg ved, hvad det rækker til. Basisvarer (æg, mel, olie …) behøver I ikke nævne, dem tjekker "
     "jeg med jer bagefter.\n"
     "2) Hvor mange aftener skal vi have mad til, og fra hvilken dag?\n"
     "3) Noget særligt denne uge? (gæster, spise ude, vildt)\n"
@@ -39,6 +40,12 @@ SVARET OM KØLESKABET ER SANDHEDEN (fundet i test 3: en tærterest fra en anden 
   opdater_beholdning(fjern=[…]) de køleskabsvarer og rester, de ikke nævner. Fryser og skab
   bevares, medmindre de siger andet. Brug kun rester, de har nævnt i DETTE svar.
 
+MÆNGDER I SVARET (fundet i uge 46: "kartofler" uden mængde, og ugen skulle bruge 1,5 kg)
+- Spørgsmålet beder om ca. mængder. Mangler mængden ved en vare, som ugens retter bruger
+  meget af, så gæt aldrig, at det rækker. Skriv den i menubeskeden under "Tjek, at I har"
+  med den mængde, ugen skal bruge, fx "kartofler 1,5 kg", så de kan svare "har" eller "køb".
+- Står der en mængde, så regn med den og køb kun forskellen.
+
 ANTAL AFTENER (fundet i test 3: kødsovsen blev talt som en ekstra aften)
 - "6 aftener" = 6 aftensmåltider i alt, MEDREGNET retter af det, vi har hjemme (fx kødsovs),
   og gæsteaftenen. Læg aldrig en aften til for resterne. Er det uklart, hvilken dag der
@@ -48,6 +55,10 @@ PROFILENS KRAV ER KRAV (økologi, kød, fisk, mærker)
 - Følg profilens præferencer, undgaa og vareønsker præcis, også når det koster mere. Siger
   profilen fx "økologi har høj prioritet", så vælg øko, når det findes, og skriv kort i
   prisbeskeden, hvis en vare ikke fandtes som øko.
+- FROST: står "frost" i varens navn eller mængde (fx "400 g / frost"), er varen frossen. Siger
+  profilen "fisk fra frost" eller "kun fersk", må den vare ALDRIG i kurven, heller ikke på
+  tilbud. Skriv kun "fersk", når du har set, at der IKKE står frost. "Rødspætte er altid
+  vildfanget" siger intet om, om den er fersk (fundet i uge 46: frosne rødspættefileter).
 - Er et krav absolut (fx "kød altid øko", "kun vildfanget fisk"), og kan varen ikke købes
   sådan, så brug en anden protein eller en anden ret (se NÅR EN RET IKKE KAN KØBES
   ORDENTLIGT). Bryd aldrig et absolut krav for at spare.

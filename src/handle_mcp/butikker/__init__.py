@@ -36,15 +36,16 @@ _butikker: dict[str, Butik] = {}
 def hent_butik(navn: str) -> Butik:
     """Én forekomst pr. butik, så login genbruges mellem kald."""
     navn = navn.lower().replace("bilkatogo", "bilka")
-    if navn not in _butikker:
-        if navn == "nemlig":
-            from handle_mcp.butikker.nemlig import Nemlig
-
-            _butikker[navn] = Nemlig()
-        elif navn == "bilka":
-            from handle_mcp.butikker.bilka import Bilka
-
-            _butikker[navn] = Bilka()
-        else:
-            raise ButikFejl(f"Kender ikke butikken {navn!r}. Brug nemlig eller bilka.")
+    if navn == "nemlig":
+        from handle_mcp.butikker.nemlig import Nemlig as klasse
+    elif navn == "bilka":
+        from handle_mcp.butikker.bilka import Bilka as klasse
+    else:
+        raise ButikFejl(f"Kender ikke butikken {navn!r}. Brug nemlig eller bilka.")
+    gammel = _butikker.get(navn)
+    # Er butikkens kode indlæst igen (genindlaes.py), så lav en ny forekomst: den gamle bruger den
+    # gamle klasse (fundet i uge 46: frost-rettelsen i bilka.py slog ikke igennem uden genstart).
+    foraeldet = gammel is not None and type(gammel) is not klasse and type(gammel).__qualname__ == klasse.__qualname__ and type(gammel).__module__ == klasse.__module__
+    if gammel is None or foraeldet:
+        _butikker[navn] = klasse()
     return _butikker[navn]

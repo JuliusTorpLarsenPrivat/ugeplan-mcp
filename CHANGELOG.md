@@ -1,6 +1,6 @@
 # Ændringer
 
-## Næste version
+## 0.31.0 (10/11-2026)
 
 - Rettet: skabsvarer i beholdningen (fx kartofler, hvidløg, krydderier) blev regnet med uge efter uge, også når en ret havde brugt dem. Varer noteret før sidste fyldte kurv står nu under "Tjek, at I har", og "har X" gemmes, så de tæller igen.
 

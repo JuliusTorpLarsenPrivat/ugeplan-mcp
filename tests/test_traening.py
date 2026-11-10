@@ -225,3 +225,30 @@ def test_niveauer_hentes_fra_garmin_mcp(monkeypatch):
 def test_uden_opsætning_hentes_intet():
     profil.opdater(garmin=[{"navn": "Julius"}])
     assert traening.hent_niveauer(datetime(2026, 11, 10).date()) == {}
+
+
+def test_garmin_opsaet_gemmer_fuld_sti_til_uv(monkeypatch):
+    monkeypatch.setattr(traening.shutil, "which", lambda navn: "/Users/x/.local/bin/uv" if navn == "uv" else None)
+    assert traening.gem_konfiguration("/garmin")["kommando"][0] == "/Users/x/.local/bin/uv"
+
+
+def test_garmin_fejl_logges(monkeypatch, caplog):
+    profil.opdater(garmin=[{"navn": "Julius"}, {"navn": "Maja"}])
+    traening.gem_konfiguration("/garmin")
+
+    def run(kommando, **kw):
+        return type("S", (), {"stdout": json.dumps({"personer": {"julius": {"fejl": "intet login"}}}), "stderr": ""})()
+
+    monkeypatch.setattr(traening.subprocess, "run", run)
+    with caplog.at_level("WARNING"):
+        assert traening.hent_niveauer(datetime(2026, 11, 10).date()) == {"Julius": {"niveau": "ukendt"}, "Maja": {"niveau": "ukendt"}}
+    assert "Julius mangler: intet login" in caplog.text and "Maja mangler" in caplog.text
+
+    def ingen_uv(kommando, **kw):
+        raise FileNotFoundError("uv")
+
+    monkeypatch.setattr(traening.subprocess, "run", ingen_uv)
+    caplog.clear()
+    with caplog.at_level("WARNING"):
+        traening.hent_niveauer(datetime(2026, 11, 10).date())
+    assert "FileNotFoundError" in caplog.text

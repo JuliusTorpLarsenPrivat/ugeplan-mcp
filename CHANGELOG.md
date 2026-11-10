@@ -1,5 +1,10 @@
 # Ændringer
 
+## Næste version
+
+- Rettet: `garmin-opsaet` gemmer den fulde sti til uv, så lytteren også finder den på macOS, hvor apps kun får en kort PATH.
+- Lytteren logger, når Garmin-niveauet ikke kan hentes (fejltype og personens navn, aldrig tal fra uret).
+
 ## 0.34.0 (10/11-2026)
 
 - **Agil plan efter træning** (kræver Garmin-data og en maskine, der er tændt):

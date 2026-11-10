@@ -96,7 +96,7 @@ def test_sundhedsdata_skrives_aldrig_til_fil():
 
 def test_tokens_ligger_i_localappdata_ikke_onedrive(monkeypatch):
     monkeypatch.setenv("LOCALAPPDATA", r"C:\Users\x\AppData\Local")
-    assert str(login.tokenmappe()) == r"C:\Users\x\AppData\Local\garmin-mcp"
+    assert login.tokenmappe() == Path(r"C:\Users\x\AppData\Local") / "garmin-mcp"  # samme på Linux i CI
     assert login.tokenfil("anna").parent.name == "anna"
     assert "onedrive" not in str(login.tokenfil("anna")).lower()
 

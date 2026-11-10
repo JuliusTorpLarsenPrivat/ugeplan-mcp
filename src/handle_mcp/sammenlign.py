@@ -349,6 +349,9 @@ class Linje:
     alternativer: list[Vare]
     sikker: bool
     behov: Maengde | None = None
+    # Alle varer, der matcher lige så godt som den valgte, også store pakker, der ikke vandt for
+    # ugens behov. Bruges kun til at se, om en større pakke er billigere pr. kg eller pr. stk.
+    lige_gode: list[Vare] = field(default_factory=list)
 
     @property
     def behov_pakker(self) -> int:
@@ -374,10 +377,50 @@ class Linje:
             return None
         if self.pakker != self.behov_pakker:
             mt = maengdetilbud(self.valgt.tilbud)
-            return f"Mængdetilbud på holdbar vare: købt {self.pakker} i stedet for {self.behov_pakker} ({mt[1] / mt[0]:.2f} kr/stk), resten holder til senere"
-        return tilbud_tip(self.valgt, self.pakker * self.antal)
+            grund = f"Mængdetilbud på holdbar vare: købt {self.pakker} i stedet for {self.behov_pakker} ({mt[1] / mt[0]:.2f} kr/stk), resten holder til senere"
+        else:
+            grund = tilbud_tip(self.valgt, self.pakker * self.antal)
+        return " · ".join(t for t in (grund, self.dobbelt) if t) or None
+
+    @property
+    def dobbelt(self) -> str | None:
+        """Er dobbelt mængde mærkbart billigere end to gange behovet (større pakke eller
+        mængderabat)? Så kan varen dække to retter. Julius: "Det er fx okay at finde 800 g hakket
+        okse og dele forbruget over 2 dage", og "ved, at der er penge at hente"."""
+        if not self.valgt or not self.sikker or not self.behov or self.antal != 1:
+            return None
+        en = pris_for_behov(self.valgt, self.behov)
+        if not en:
+            return None
+        to = Maengde(self.behov.tal * 2, self.behov.enhed)
+        # Kun samme vare i en anden størrelse (samme navn og mærke): fundet live foreslog den
+        # ellers ikke-øko kød til en øko-linje og røget pålægskylling i stedet for kyllingebryst.
+        mulige = [v for v in {id(v): v for v in [self.valgt, *self.alternativer, *self.lige_gode]}.values() if samme_vare(v, self.valgt)]
+        priser = [(pris, v) for v in mulige if (pris := pris_for_behov(v, to))]
+        if not priser:
+            return None
+        pris, v = min(priser, key=lambda pv: pv[0])
+        if v is self.valgt and pris <= en:  # pakken dækker allerede to retter: købes ikke igen
+            return (
+                f"Pakken ({self.valgt.maengde or self.valgt.navn}) dækker {to}: resten kan bruges til en ret "
+                "mere i ugen, fx samme kød med forskelligt tilbehør, i stedet for at købe kød til den"
+            )
+        if pris > en * 2 * (1 - DOBBELT_BESPARELSE):
+            return None
+        hvad = "samme vare" if v is self.valgt else f"{v.navn} {v.maengde or ''}".strip()
+        spar = en * 2 - pris
+        return (
+            f"Større køb er billigere: {to} koster {pris:.2f} kr ({hvad}) mod {en * 2:.2f} kr for to gange "
+            f"{self.behov} (spar {spar:.0f} kr). Kan dække to retter, fx samme kød med forskelligt tilbehør"
+        )
 
 
+def samme_vare(a: Vare, b: Vare) -> bool:
+    """Samme produkt i en anden pakkestørrelse: samme navn og mærke (store/små bogstaver ligegyldige)."""
+    return " ".join(a.navn.lower().split()) == " ".join(b.navn.lower().split()) and (a.maerke or "").lower() == (b.maerke or "").lower()
+
+
+DOBBELT_BESPARELSE = Decimal("0.15")  # mindst 15 % billigere for dobbelt mængde, før det nævnes
 HOLDBARE_KATEGORIER = ("kolonial", "snacks og søde sager", "drikkevarer")
 MAKS_EKSTRA_TIL_LAGER = 2
 
@@ -469,11 +512,14 @@ async def prissaet(butik: Butik, liste: list[tuple[str, int]], oeko: bool = Fals
         tilbud = await hent_tilbud(butik)  # én gang pr. butik, ikke pr. vare
         for soegning, antal in liste:  # én ad gangen: vær flink ved butikken
             tekst, behov_ = behov(soegning)  # "500 g hakket oksekød" → søg "hakket oksekød"
-            fundne, score = bedste(tekst, await kandidater(butik, tekst, tilbud), behov_, oeko)
+            vurderet = rangeret(tekst, await kandidater(butik, tekst, tilbud), behov_, oeko)
+            fundne = [v for _, v in vurderet[: 1 + ALTERNATIVER]]
+            score = vurderet[0][0] if vurderet else 0.0
+            lige_gode = [v for sc, v in vurderet if sc >= score - 1e-9 and (not oeko or er_oeko(v) == er_oeko(fundne[0]))]
             valgt = fundne[0] if fundne else None
             # En forarbejdet vare er kun valgt, fordi der ikke var andet: den skal tjekkes
             sikker = score >= 1 and not (valgt and er_forarbejdet(valgt, ord_i(tekst)))
-            res.linjer.append(Linje(soegning, antal, valgt, fundne[1:], sikker, behov_))
+            res.linjer.append(Linje(soegning, antal, valgt, fundne[1:], sikker, behov_, lige_gode))
     except (ButikFejl, IntetLogin) as fejl:
         res.fejl = str(fejl)
     return res

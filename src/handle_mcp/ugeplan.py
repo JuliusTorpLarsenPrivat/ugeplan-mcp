@@ -84,7 +84,7 @@ menuen blev ikke lavet om.
   - Samme tilbehør to dage med forskelligt kød, fx en stor portion ovnkartofler eller ris.
 - OPFIND IKKE NYE OPSKRIFTER. Byg parret af dele fra rigtige opskrifter (opskriftssiderne
   eller vis_opskrifter): tilbehøret fra den ene og kødet fra den anden, eller kødet fra én og
-  tilbehør fra to andre. Julius: "så er det ikke dig, der opfinder opskrifter, men du
+  tilbehør fra to andre. Fra brugeren: "så er det ikke dig, der opfinder opskrifter, men du
   sammensætter blot et par dele af eksisterende opskrifter anderledes." Gem linket til den
   opskrift, hver del kommer fra.
 - Skriv det tydeligt i menuen, så vi kan se det og lave dobbelt portion den første dag, fx:

@@ -1,6 +1,6 @@
 # Ændringer
 
-## Næste version
+## 0.37.0 (10/11-2026)
 
 - **Garmin er nu en del af ugeplan-mcp.** Den valgfri Garmin-del installeres med `ugeplan-mcp[garmin]` og giver serveren `garmin-mcp` (søvn, hvilepuls, skridt, kalorier, træninger, vægt og dagens belastning, kun læsning). Se [docs/GARMIN.md](docs/GARMIN.md).
 - Telegram-lytteren henter dagens niveau direkte fra Garmin-delen, når den er installeret. `garmin-opsaet` behøves ikke længere, men virker stadig.

@@ -312,7 +312,7 @@ async def _videresend(fra_chat: str, navn: str, tekst: str) -> None:
 
 
 BESTIL_VENTER = "bestil-venter"  # læses af madplan.gem_fra_vaerktoej, når den rettede plan gemmes
-BESTIL_EFTER_RETTELSE = "Modtaget. Claude retter planen efter jeres besked og lægger den så i kurven."
+BESTIL_EFTER_RETTELSE = "Modtaget. Assistenten retter planen efter jeres besked og lægger den så i kurven."
 
 
 def _rettelse_efter(oprettet: str) -> bool:
@@ -327,7 +327,7 @@ def ikke_fyldt_tekst(fejl: str) -> str:
     """Til husstanden: hvorfor kurven ikke blev fyldt, uden værktøjets instrukser til Claude
     (fundet i uge 46: "kald igen med kurven_maa_have_andet=True" stod på en telefon i husstanden)."""
     grund = re.split(r"\s+(?:Spørg brugeren|Kald igen|kald igen)", fejl, maxsplit=1)[0].strip()
-    videre = "Claude spørger jer om det her." if claude_lytter() else "Skriv fortsæt i Claude-chatten, så klarer Claude det."
+    videre = "Assistenten spørger jer om det her." if claude_lytter() else IKKE_I_GANG_FORTSAET
     return f"Kurven blev IKKE fyldt: {grund}\n{videre}"
 
 
@@ -381,11 +381,12 @@ async def _godkendelse(chat_id: str, navn: str, tekst: str) -> bool:
 
 
 CLAUDE_LYTTER_SEK = 2 * 60  # Claude kalder værktøjer hvert minut, mens den arbejder (5 min var for længe: fundet i demoen)
-IKKE_LYTTER = "Modtaget. Claude er ikke i gang lige nu. Skal det videre nu, så skriv fortsæt i Claude-chatten."
+IKKE_LYTTER = "Modtaget. AI-assistenten er ikke i gang lige nu. Skal det videre nu, så skriv fortsæt i chatten med den."
+IKKE_I_GANG_FORTSAET = "Skriv fortsæt i chatten med AI-assistenten, så klarer den det."
 
 
-ERSTATNING_LYTTER = "Claude finder en erstatning og retter kurven. Vent med at betale."
-ERSTATNING_IKKE_LYTTER = "Skriv fortsæt i Claude-chatten, så finder Claude en erstatning. Vent med at betale."
+ERSTATNING_LYTTER = "Assistenten finder en erstatning og retter kurven. Vent med at betale."
+ERSTATNING_IKKE_LYTTER = "Skriv fortsæt i chatten med AI-assistenten, så finder den en erstatning. Vent med at betale."
 
 
 def claude_lytter() -> bool:

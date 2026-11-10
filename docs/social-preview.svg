@@ -8,7 +8,7 @@
   </defs>
   <rect width="1280" height="640" fill="url(#bg)"/>
 
-  <text x="80" y="118" fill="#7ee2a8" font-size="24" font-weight="600" letter-spacing="1">OPEN SOURCE · MIT · MCP-SERVER TIL CLAUDE</text>
+  <text x="80" y="118" fill="#7ee2a8" font-size="24" font-weight="600" letter-spacing="1">OPEN SOURCE · MIT · MCP-SERVER TIL DIN AI</text>
   <text x="80" y="210" fill="#ffffff" font-size="92" font-weight="800">ugeplan-mcp</text>
   <text x="80" y="272" fill="#c9d1d9" font-size="34">Ugens madplan for hele husstanden.</text>
   <text x="80" y="316" fill="#c9d1d9" font-size="34">Fra køleskab til fyldt kurv, mens I svarer fra telefonen.</text>
@@ -44,6 +44,6 @@
     </g>
   </g>
 
-  <text x="80" y="566" fill="#8b949e" font-size="24">Claude  ·  Telegram  ·  nemlig.com  ·  BilkaToGo</text>
+  <text x="80" y="566" fill="#8b949e" font-size="24">Claude, Cursor m.fl.  ·  Telegram  ·  nemlig.com  ·  BilkaToGo</text>
   <text x="1200" y="566" fill="#8b949e" font-size="24" text-anchor="end">Den kan aldrig bestille eller betale</text>
 </svg>

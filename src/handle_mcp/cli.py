@@ -1,6 +1,6 @@
 """Kommandoer i terminalen:
 
-    ugeplan-mcp opsaet          guide til første opsætning: butikker, Telegram og Claude Desktop
+    ugeplan-mcp opsaet          guide til første opsætning: butikker, Telegram og din AI-app
     ugeplan-mcp login nemlig   spørger om email og kode, tjekker dem hos butikken og gemmer dem
     ugeplan-mcp logout nemlig   sletter det gemte login
     ugeplan-mcp status          viser hvilke butikker der har et gemt login (aldrig selve koden)
@@ -10,7 +10,7 @@
     ugeplan-mcp telegram-frakobl kobler alle telefoner fra
     ugeplan-mcp http-noegle     laver en ny adgangsnøgle til HTTP-tilstand (vises kun én gang)
     ugeplan-mcp http [host] [port]
-                               kører serveren over HTTP i stedet for til Claude Desktop.
+                               kører serveren over HTTP i stedet for stdio.
                                Standard: 127.0.0.1 8765 (kun denne maskine)
 """
 
@@ -59,7 +59,7 @@ async def _telegram_opsaet(fra_udklipsholder: bool = False) -> int:
         print(f"Det virkede ikke, og intet er gemt: {fejl}")
         return 1
     kode = telegram.ny_parringskode()
-    print(f"\nBotten {navn} er gemt i Windows' nøglering.")
+    print(f"\nBotten {navn} er gemt i styresystemets nøglering.")
     print(f"3. Start lytteren: ugeplan-mcp telegram")
     print(f"4. Søg {navn} frem i Telegram på begge telefoner og send koden {kode} (gyldig i 30 minutter).")
     return 0
@@ -146,8 +146,8 @@ def _ja(spoergsmaal: str) -> bool:
         return False
 
 
-def claude_config() -> dict:
-    """Det, der skal stå i Claude Desktops claude_desktop_config.json."""
+def server_kommando() -> tuple[str, list[str]]:
+    """Kommandoen, en AI-app skal starte serveren med (MCP over stdio). Den samme for alle apps."""
     import shutil
     from importlib.metadata import PackageNotFoundError, version
 
@@ -156,19 +156,67 @@ def claude_config() -> dict:
     except PackageNotFoundError:
         v = None
     kilde = "git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp" + (f"@v{v}" if v else "")
-    uvx = shutil.which("uvx") or "uvx"
-    return {"mcpServers": {"ugeplan": {"command": uvx, "args": ["--from", kilde, "ugeplan-mcp"]}}}
+    return shutil.which("uvx") or "uvx", ["--from", kilde, "ugeplan-mcp"]
+
+
+def claude_config() -> dict:
+    """Det, der skal stå i Claude Desktops claude_desktop_config.json (samme form som Cursor m.fl.)."""
+    cmd, args = server_kommando()
+    return {"mcpServers": {"ugeplan": {"command": cmd, "args": args}}}
+
+
+# Serveren er almindelig MCP og er ikke bundet til én AI. Julius: "det skal være åbent".
+# Hver app har sin egen måde at få den ind på; teksten er den samme kommando i forskellig form.
+KLIENTER = {
+    "1": "Claude Desktop",
+    "2": "Claude Code",
+    "3": "Cursor",
+    "4": "VS Code (GitHub Copilot)",
+    "5": "En anden app med MCP",
+}
+
+
+def klient_vejledning(valg: str) -> str:
+    """Hvordan serveren sættes ind i den valgte AI-app."""
+    import json
+    import os
+    import shlex
+
+    cmd, args = server_kommando()
+    standard = json.dumps(claude_config(), indent=2, ensure_ascii=False)
+    if valg == "1":
+        sti = os.path.join(os.environ.get("APPDATA", "~"), "Claude", "claude_desktop_config.json")
+        return (
+            "I Claude Desktop: Settings > Developer > Edit Config. Læg dette ind under \"mcpServers\"\n"
+            f"(filen ligger normalt i {sti}):\n\n{standard}\n\n"
+            "Genstart Claude Desktop helt (også ikonet i proceslinjen)."
+        )
+    if valg == "2":
+        linje = "claude mcp add --scope user ugeplan -- " + " ".join(shlex.quote(a) for a in [cmd, *args])
+        return f"Kør i en terminal:\n\n  {linje}\n\nStart så en ny Claude Code-session."
+    if valg == "3":
+        return f"Læg dette i ~/.cursor/mcp.json (eller Cursor Settings > MCP > Add):\n\n{standard}\n\nGenstart Cursor."
+    if valg == "4":
+        vs = json.dumps({"servers": {"ugeplan": {"type": "stdio", "command": cmd, "args": args}}}, indent=2, ensure_ascii=False)
+        return (
+            "I VS Code: Kommandopaletten > \"MCP: Open User Configuration\", og læg dette ind:\n\n"
+            f"{vs}\n\nBrug Copilot Chat i Agent-tilstand."
+        )
+    return (
+        "Appen skal kunne starte en lokal MCP-server (stdio). Brug denne kommando:\n\n"
+        f"  kommando:   {cmd}\n  argumenter: {' '.join(args)}\n\n"
+        "Mange apps vil have den i denne form:\n\n"
+        f"{standard}\n\n"
+        "Kan appen kun forbinde til en server over nettet, så se \"Over netværket\" i README."
+    )
 
 
 def _opsaet() -> int:
     """Første opsætning, ét trin ad gangen. Alt kan springes over og tages senere."""
-    import json
-    import os
-
     print("Velkommen til ugeplan-mcp. Tre korte trin, og alle kan springes over med Enter.\n")
 
     print("TRIN 1/3: BUTIKKER")
-    print("Med login kan Claude fylde kurven (du betaler altid selv i butikkens app).")
+    print("Med login kan AI-assistenten fylde kurven (du betaler altid selv i butikkens app).")
     print("Uden login virker nemligs priser og opskrifter stadig, men kurven kan ikke fyldes.")
     for butik in login.BUTIKKER:
         if login.har_login(butik):
@@ -181,18 +229,22 @@ def _opsaet() -> int:
 
     print("\nTRIN 2/3: TELEGRAM (valgfrit)")
     print("Så kan hele husstanden svare fra telefonen: hvad der er i køleskabet, rettelser og \"bestil\".")
-    print("Uden Telegram foregår det hele i chatten med Claude.")
+    print("Uden Telegram foregår det hele i chatten med AI-assistenten.")
     if _ja("  Skal I bruge Telegram?"):
         asyncio.run(_telegram_opsaet())
 
-    print("\nTRIN 3/3: CLAUDE DESKTOP")
-    sti = os.path.join(os.environ.get("APPDATA", "~"), "Claude", "claude_desktop_config.json")
-    print("I Claude Desktop: Settings > Developer > Edit Config. Læg dette ind under \"mcpServers\"")
-    print(f"(filen ligger normalt i {sti}):\n")
-    print(json.dumps(claude_config(), indent=2, ensure_ascii=False))
-    print("\nGenstart Claude Desktop helt (også ikonet i proceslinjen).")
+    print("\nTRIN 3/3: DIN AI-APP")
+    print("ugeplan-mcp er en MCP-server og virker med de AI-apps, der kan bruge MCP. Hvilken bruger du?")
+    for nr, navn in KLIENTER.items():
+        print(f"  {nr}) {navn}")
+    try:
+        valg = input("Vælg 1-5 [5]: ").strip() or "5"
+    except EOFError:
+        print()
+        valg = "5"
+    print("\n" + klient_vejledning(valg))
 
-    print("\nKLAR. Skriv \"lav madplan\" i Claude. Første gang stiller Claude et par korte spørgsmål om")
+    print("\nKLAR. Skriv \"lav madplan\" til AI-assistenten. Første gang stiller den et par korte spørgsmål om")
     print("jeres husstand: antal, budget, hvad I kan lide og ikke spiser, faste måltider og")
     print("bestemte varer. Det bliver gemt i jeres profil, kun på denne computer.")
     print("Kør `ugeplan-mcp opsaet` igen, når som helst, eller `ugeplan-mcp status` for at se, hvad der er sat op.")

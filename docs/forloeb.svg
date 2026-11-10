@@ -24,7 +24,7 @@
   </style>
   <rect class="bg" width="960" height="280" rx="12"/>
   <text class="hoved" x="32" y="44">Én uge med ugeplan-mcp</text>
-  <text class="under" x="32" y="68">Husstanden svarer i Telegram. Claude planlægger og fylder kurven. I betaler selv.</text>
+  <text class="under" x="32" y="68">Husstanden svarer i Telegram. AI-assistenten planlægger og fylder kurven. I betaler selv.</text>
 
   <g transform="translate(32,96)">
     <rect class="kort" width="160" height="160" rx="10"/>

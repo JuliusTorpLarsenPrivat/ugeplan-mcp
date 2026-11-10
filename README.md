@@ -1,6 +1,6 @@
 # ugeplan-mcp
 
-**Ugens madplan for hele husstanden, direkte på telefonen. Claude laver planen, I retter den i Telegram, og kurven bliver fyldt hos nemlig.com eller BilkaToGo. I betaler selv.**
+**Ugens madplan for hele husstanden, direkte på telefonen. Din AI-assistent laver planen, I retter den i Telegram, og kurven bliver fyldt hos nemlig.com eller BilkaToGo. I betaler selv.**
 
 [![Tests](https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/licens-MIT-blue.svg)](LICENSE)
@@ -13,8 +13,8 @@
 
 ## Sådan ser en uge ud
 
-1. **Søndag:** I skriver "lav madplan" i Claude. Botten spørger på begge jeres telefoner: *"Hvad har I i køleskabet?"* I svarer, som det passer jer, også indtalt.
-2. **Menu:** Claude laver en menu ud fra jeres profil, det I har hjemme, ugens tilbud og jeres favoritretter, med et prisskøn mod ugens budget. I retter i Telegram ("ikke fisk tirsdag", "billigere").
+1. **Søndag:** I skriver "lav madplan" til jeres AI-assistent. Botten spørger på begge jeres telefoner: *"Hvad har I i køleskabet?"* I svarer, som det passer jer, også indtalt.
+2. **Menu:** Assistenten laver en menu ud fra jeres profil, det I har hjemme, ugens tilbud og jeres favoritretter, med et prisskøn mod ugens budget. I retter i Telegram ("ikke fisk tirsdag", "billigere").
 3. **Pris:** Hele listen prissættes i begge butikker, med levering, poser og minimumskøb. Den billigste vinder, eller begge, hvis det kan betale sig.
 4. **"bestil":** Kurven bliver fyldt med præcis de godkendte varer. Botten sender ugens menu med links til opskrifterne og fastgør den øverst i chatten. Den sender også den billigste leveringstid, der når første aftensmad, og hvornår I senest skal bestille.
 5. **I betaler** i butikkens app.
@@ -32,7 +32,7 @@ I kan se hinandens svar, og I behøver ikke vente på hinanden.
 
 ## Brug hele den eller kun dele af den
 
-Kun Claude Desktop er et krav. Resten vælger du til.
+Det eneste krav er en AI-app, der kan bruge MCP-servere (se *Virker med* nedenfor). Resten vælger du til.
 
 | Det har du | Det får du |
 |---|---|
@@ -46,29 +46,42 @@ Værktøjerne kan også bruges hver for sig uden ugeplanen, fx *"hvad koster den
 
 ## Kom i gang
 
-Du skal bruge [Claude Desktop](https://claude.ai/download), [uv](https://docs.astral.sh/uv/getting-started/installation/) og [Git](https://git-scm.com/downloads). Testet på Windows. Mac og Linux burde virke.
+Du skal bruge en AI-app med MCP (se *Virker med*), [uv](https://docs.astral.sh/uv/getting-started/installation/) og [Git](https://git-scm.com/downloads). Testet på Windows. Mac og Linux burde virke.
 
-**1. Kør guiden** i en terminal. Den tager dig gennem butikker, Telegram og Claude Desktop, ét trin ad gangen, og alt kan springes over:
+**1. Kør guiden** i en terminal. Den tager dig gennem butikker, Telegram og din AI-app, ét trin ad gangen, og alt kan springes over:
 
 ```powershell
 uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.31.0 ugeplan-mcp opsaet
 ```
 
-Login gemmes kun i styresystemets nøglering. Guiden slutter med den tekst, du skal sætte ind i Claude Desktop (Settings > Developer > Edit Config).
+Login gemmes kun i styresystemets nøglering. Til sidst vælger du din AI-app, og guiden viser præcis, hvad du skal sætte ind og hvor.
 
-**2. Genstart Claude Desktop helt**, også ikonet i proceslinjen.
+**2. Genstart AI-appen**, så den finder serveren.
 
-**3. Skriv "lav madplan" i Claude.** Første gang stiller Claude 4 korte runder spørgsmål om jeres husstand: hvor mange I er og budget, hvad I kan lide og ikke spiser, faste måltider og bestemte varer, og jeres favoritretter. Svarene gemmes i profilen, og bagefter kommer ugens plan.
+**3. Skriv "lav madplan" til assistenten.** Første gang stiller den 4 korte runder spørgsmål om jeres husstand: hvor mange I er og budget, hvad I kan lide og ikke spiser, faste måltider og bestemte varer, og jeres favoritretter. Svarene gemmes i profilen, og bagefter kommer ugens plan.
 
 Profilen kan rumme alt fra "kød altid økologisk" til "chokolade mindst 85 %". Du ændrer den ved bare at sige det, fx *"husk, vi ikke kan lide fennikel"*, eller ved at skrive *"gennemgå vores profil"*.
 
 Guiden kan køres igen når som helst. `ugeplan-mcp status` viser, hvad der er sat op.
 
+### Virker med
+
+ugeplan-mcp er en almindelig [MCP-server](https://modelcontextprotocol.io), så den er ikke bundet til én AI. Guiden har vejledning til:
+
+| App | Status |
+|---|---|
+| Claude Desktop | Brugt hver uge. Det er den, forløbet er finpudset med. |
+| Claude Code | Virker. Én kommando: `claude mcp add`. |
+| Cursor, VS Code (Copilot), Windsurf m.fl. | Bør virke: de starter lokale MCP-servere på samme måde. Ikke testet hver uge. |
+| Apps, der kun kan forbinde over nettet | Brug *Over netværket* nedenfor. Det kræver, at appen kan sende en adgangsnøgle. |
+
+Forløbet er en lang samtale med mange værktøjskald. Jo bedre modellen er til at følge instrukser og bruge værktøjer, jo bedre bliver planen. Prøver du en anden app, så fortæl gerne, hvordan det gik, i et issue.
+
 ## Værktøjer
 
 | Værktøj | Ændrer noget? | Hvad |
 |---|---|---|
-| `ugeplan_forloeb` | nej | Ugeplanens faste forløb, som Claude følger |
+| `ugeplan_forloeb` | nej | Ugeplanens faste forløb, som assistenten følger |
 | `soeg_varer` | nej | Pris, enhedspris, tilbud og lager. `billigst_foerst=True` gennemsøger flere hits og ugens tilbud |
 | `ugens_tilbud` | nej | Ugens tilbud i én butik |
 | `sammenlign_liste` | nej | Prissætter en liste i begge butikker med gebyrer og anbefaler den billigste løsning |
@@ -91,8 +104,8 @@ Guiden kan køres igen når som helst. `ugeplan-mcp status` viser, hvad der er s
 - Login og botnøgle ligger kun i styresystemets nøglering.
 - Profil, beholdning, opskrifter og planer er JSON-filer på din egen computer i `%LOCALAPPDATA%\handle-mcp\`. De sendes aldrig til butikkerne.
 - Alle kald går gennem `vagt.py`, som kun tillader butikkernes egne adresser og afviser alt, der ligner bestilling, betaling eller valg af levering.
-- Navn, adresse, telefon og e-mail fjernes fra svarene, før Claude ser dem.
-- Det, Claude ser, sendes til Anthropic som en del af samtalen.
+- Navn, adresse, telefon og e-mail fjernes fra svarene, før AI'en ser dem.
+- Det, AI'en ser, sendes til den AI-udbyder, din app bruger (fx Anthropic, OpenAI eller GitHub), som en del af samtalen.
 - Lås installationen til en version (`@v0.31.0`), så koden ikke ændrer sig uden din viden.
 
 ## Begrænsninger
@@ -101,7 +114,7 @@ Guiden kan køres igen når som helst. `ugeplan-mcp status` viser, hvad der er s
 - Ikke tilknyttet nemlig.com, Salling Group eller Anthropic.
 - Kun hjemlevering, ikke afhentning.
 - BilkaToGo kræver login. nemlig kan søges uden, men kurven kræver login.
-- Telegram-botten svarer kun, mens Claude Desktop kører. Til en maskine, der altid er tændt, se *Over netværket* nedenfor.
+- Telegram-botten tager imod svar af sig selv, men planen bliver kun lavet videre, mens AI-appen kører og arbejder. Til en maskine, der altid er tændt, se *Over netværket* nedenfor.
 
 ## Over netværket (HTTP)
 
@@ -121,7 +134,7 @@ uv sync
 uv run pytest
 ```
 
-Ændringer i logikken bruges med det samme, uden genstart (`genindlaes.py`). Nye værktøjer og ændringer i `server.py` kræver en genstart af Claude Desktop. [LÆR.md](LÆR.md) gennemgår, hvordan det hænger sammen. Bidrag er velkomne: se [CONTRIBUTING.md](CONTRIBUTING.md).
+Ændringer i logikken bruges med det samme, uden genstart (`genindlaes.py`). Nye værktøjer og ændringer i `server.py` kræver en genstart af AI-appen. [LÆR.md](LÆR.md) gennemgår, hvordan det hænger sammen. Bidrag er velkomne: se [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Python-pakken hedder internt stadig `handle_mcp`, og kommandoen `handle-mcp` virker stadig.
 

@@ -1,5 +1,10 @@
 # Ændringer
 
+## Næste version
+
+- **Åben for alle AI-apps med MCP.** Guiden spørger, hvilken app du bruger (Claude Desktop, Claude Code, Cursor, VS Code eller en anden), og viser præcis, hvad der skal sættes ind. README'en har en tabel over, hvad der virker.
+- Telegram-beskederne siger "AI-assistenten" i stedet for "Claude".
+
 ## 0.31.0 (10/11-2026)
 
 - Rettet: skabsvarer i beholdningen (fx kartofler, hvidløg, krydderier) blev regnet med uge efter uge, også når en ret havde brugt dem. Varer noteret før sidste fyldte kurv står nu under "Tjek, at I har", og "har X" gemmes, så de tæller igen.

@@ -46,7 +46,7 @@ def test_ikke_fyldt_viser_ikke_vaerktoejets_instrukser(monkeypatch):
     tekst = telegram.ikke_fyldt_tekst(fejl)
     assert "Zinfandel" in tekst and "kurven_maa_have_andet" not in tekst and "Spørg brugeren" not in tekst
     monkeypatch.setattr(telegram, "claude_lytter", lambda: False)
-    assert "fortsæt i Claude-chatten" in telegram.ikke_fyldt_tekst(fejl)
+    assert "fortsæt i chatten med AI-assistenten" in telegram.ikke_fyldt_tekst(fejl)
 
 
 def test_rester_er_ikke_planens_start():

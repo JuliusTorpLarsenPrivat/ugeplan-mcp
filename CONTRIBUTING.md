@@ -18,7 +18,7 @@ Tak, fordi du vil hjælpe. Fejl og ønsker skal i [Issues](https://github.com/Ju
 - **Kun butikkernes egne adresser.** Nye adresser skal tilføjes i `vagt.py`.
 - **Husstandens egne regler hører til i profilen,** ikke i koden.
 - **Nye moduler** skal med i `genindlaes.RAEKKEFOLGE`. Det tjekker en test.
-- Undgå at ændre `server.py`, når det kan undgås, for det kræver en genstart af Claude Desktop.
+- Undgå at ændre `server.py`, når det kan undgås, for det kræver en genstart af AI-appen.
 
 ## Sprog
 

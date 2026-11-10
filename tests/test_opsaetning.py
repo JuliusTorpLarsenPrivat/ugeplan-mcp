@@ -118,3 +118,25 @@ def test_opsaet_kan_springes_helt_over(monkeypatch, capsys):
 def test_claude_config_peger_paa_repoet():
     k = cli.claude_config()["mcpServers"]["ugeplan"]
     assert k["args"][0] == "--from" and "ugeplan-mcp" in k["args"][1] and k["args"][2] == "ugeplan-mcp"
+
+
+def test_guiden_er_ikke_bundet_til_claude(monkeypatch, capsys):
+    """Julius: "vi dikterer ikke, at der SKAL bruges Claude". Alle apps får samme kommando."""
+    cmd, args = cli.server_kommando()
+    for valg in cli.KLIENTER:
+        tekst = cli.klient_vejledning(valg)
+        assert args[1] in tekst, valg  # samme kilde (git+…@vX) i alle apps
+    assert "claude mcp add" in cli.klient_vejledning("2")
+    assert '"servers"' in cli.klient_vejledning("4") and '"type": "stdio"' in cli.klient_vejledning("4")
+    assert "Over netværket" in cli.klient_vejledning("5")
+    monkeypatch.setattr("builtins.input", lambda *_: "3")
+    cli.kommando(["opsaet"])
+    ud = capsys.readouterr().out
+    assert "Cursor" in ud and "Claude Desktop helt" not in ud and "TRIN 3/3: DIN AI-APP" in ud
+
+
+def test_telegram_taler_ikke_om_claude():
+    from handle_mcp import telegram
+
+    for t in (telegram.IKKE_LYTTER, telegram.IKKE_I_GANG_FORTSAET, telegram.ERSTATNING_LYTTER, telegram.ERSTATNING_IKKE_LYTTER, telegram.BESTIL_EFTER_RETTELSE):
+        assert "Claude" not in t

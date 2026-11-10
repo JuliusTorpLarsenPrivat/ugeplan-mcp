@@ -635,3 +635,22 @@ def test_proces_lever():
 
     assert telegram.proces_lever(os.getpid())
     assert not telegram.proces_lever(2**22 + 12345)
+
+
+async def test_ja_til_bytteforslag_på_telegram(tg, monkeypatch):
+    """Hele vejen: forslaget ligger, Maja skriver "ja", planen byttes og menuen sendes igen, uden AI."""
+    from datetime import datetime, timedelta
+
+    from handle_mcp import madplan, traening
+
+    par(tg, 1, 2)
+    await telegram.hent_og_haandter(0)
+    p = madplan.gem("bilka", ["Tir: Shakshuka", "Fre: Nakkekoteletter"], [{"vare_id": "1", "navn": "Æg", "antal": 1, "pris": 30.0}], retinfo={"Tir: Shakshuka": {"niveau": "rolig"}, "Fre: Nakkekoteletter": {"niveau": "hård"}})
+    madplan.saet_status(p.kode, "kurv fyldt", "test")
+    om_lidt = (datetime.now(traening.TIDSZONE) + timedelta(hours=2)).isoformat(timespec="minutes")
+    traening._gem_haendelse({"type": "bytteforslag", "kode": p.kode, "i": 0, "j": 1, "retter": ["Tir: Shakshuka", "Fre: Nakkekoteletter"], "tekst": "…", "gyldig_til": om_lidt, "status": "afventer"})
+    tg.besked(1, "Ja")
+    assert (await telegram.hent_og_haandter(0))[-1] == "bytteforslag godkendt af Maria"
+    assert madplan.hent(p.kode).retter == ["Tir: Nakkekoteletter", "Fre: Shakshuka"]
+    tekster = [t for _, t in tg.sendt]
+    assert any(t.startswith("Byttet: Fre ↔ Tir") for t in tekster) and any("Ugens menu" in t for t in tekster)

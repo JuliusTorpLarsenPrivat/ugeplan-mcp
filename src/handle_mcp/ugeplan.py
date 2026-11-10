@@ -115,6 +115,13 @@ TRIN 2: MENUEN (uden priser, men med et prisskøn)
    for HELE ugen frem til næste levering (7 dage), ikke kun de aftener, vi skal have
    aftensmad. "Morgenmad hver dag" = 7 morgener, "frokost lørdag og søndag" = begge dage
    (fundet i en test: kun 6 morgener, og søndagsfrokosten manglede).
+   TRÆNING (kun med et mønster fra FORBEREDELSE): læg retter rige på protein og energi på de
+   ugedage, der plejer at være hårde, og lettere retter med mere grønt på de rolige. Profilens
+   kost går altid forud: på LCHF betyder en hård dag mere fedt og protein, ikke flere
+   kulhydrater. Har personerne forskellige niveauer, så én ret til alle efter flertallet, og
+   skriv ekstra tilbehør i menuen til den mest aktive, fx "+ ekstra ris til Anna". Byg ugen,
+   så den er nem at bytte rundt i: fersk fisk tidligt i ugen, og retter med holdbare råvarer
+   resten af ugen. Nævn aldrig tal fra uret, kun fx "hård dag".
 4. Skøn prisen pr. ret ud fra hovedingredienserne og kendte priser (koebsmoenster, tidligere
    søgninger), og skøn de faste måltider for sig. Læg levering og poser til (nemlig ca. 36 kr
    levering + ca. 18 kr poser). Hold det samlede skøn under ugens budget.
@@ -144,7 +151,11 @@ TRIN 3: PRISEN
    en butik kunstigt billig eller smider den ud (fundet live: majsmel blev regnet som
    nakkekoteletter, og Bilka så 430 kr billigere ud end den var).
 9. Gem med gem_madplan (gebyrer = alle gebyrer inkl. poser, valg={"ugebudget_kr": ugens budget}). Ved
-   deling: butik="begge" og "butik" på hver vare. Send: butik(ker), total inkl. levering og
+   deling: butik="begge" og "butik" på hver vare. Send ALTID også valg={"retinfo": {…}} med
+   hver ret (samme tekst som i `retter`): "niveau" (rolig, normal, hård eller meget hård: den
+   slags dag retten passer til), "fast": true for fersk fisk (flyttes aldrig) og "optoe": true
+   for frost og vildt (skal tøs op dagen før). Rester og aftener ude får ingen retinfo. Det
+   bruges til at bytte retter, når en dag går anderledes, og til påmindelsen om at tø op. Send: butik(ker), total inkl. levering og
    poser mod ugens budget, antal varer, de 3-5 vigtigste valg kort, evt. budgetadvarsel, og
    "Skriv bestil, eller ret noget".
    Skriv KUN ét beløb, de skal betale. Den anden butik nævnes som en forskel, fx "(Bilka ville
@@ -256,7 +267,10 @@ FAVORITTER (vis_opskrifter = vores samling af retter, vi kan lide)
 FORBEREDELSE = """FORBEREDELSE (stille, uden at spørge nogen)
 1. Læs vis_profil (også faste måltider, vareønsker og fra_husstanden), koebsmoenster
    (andel_af_indkoeb fra profilens note), vis_beholdning og vis_opskrifter. Har du
-   garmin-værktøjerne, så tag dagsstatus og træninger 14 dage tilbage.
+   garmin-værktøjerne, så hent `belastning` for de seneste 28 dage for hver person i profilens
+   `garmin` (person = "konto", ellers navnet), og find mønstret pr. ugedag: hvilke ugedage er
+   typisk hård eller meget hård, og hvilke rolig. Kun personer med ja i profilen. Er der for
+   lidt data, så lav en almindelig plan og nævn det ikke.
    Gå `beskeder_siden_sidst` (beskeder sendt mellem madplanerne) og profilens fra_husstanden
    igennem efter ØNSKER TIL FREMOVER, og ryd op i profilen, før du laver menuen.
    Tjek kurven i hver butik i `butikker` med vis_kurv. Ligger der varer fra før, så skriv det her i chatten til
@@ -321,7 +335,9 @@ Runde 1, husstanden: Hvor mange er I (og børnenes alder, hvis der er børn)? Hv
   koebsmoenster, hvis der er en butik med ordrer) → personer, ugebudget_kr.
 Runde 2, smag: Hvad kan I lide (madstil, køkkener, max tid på hverdage)? Hvad spiser I ikke
   (allergier, intolerance, det I ikke kan lide)? Krav til økologi, kød, fisk eller kødfri dage?
-  → praeferencer, undgaa.
+  → praeferencer, undgaa. Har du garmin-værktøjerne, så spørg også hver person: "Har du et
+  Garmin-ur? Må madplanen bruge dine data?" Kun dem, der siger ja → garmin. Og hvornår I
+  spiser aftensmad (standard 18.30) → aftensmad.
 Runde 3, det faste: Måltider, der er ens hver uge og skal med i indkøbet (morgenmad,
   madpakker, weekendfrokost), med indhold og antal dage? Bestemte varer eller mærker
   (fx "letmælk, ikke skummet", "kaffe: hele bønner")? → faste_maaltider, varepraeferencer.

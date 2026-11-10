@@ -64,6 +64,10 @@ class Madplan:
     # ret → link til opskriften, så en ret kan gemmes som favorit bagefter (ældre planer: tom)
     opskrifter: dict[str, str] = field(default_factory=dict)
     menu_sendt: bool = False  # ugemenuen med links er sendt og fastgjort i Telegram
+    # ret → {"niveau": "hård", "fast": False, "optoe": True}: hvilken slags dag retten passer til,
+    # om den aldrig må flyttes (fersk fisk), og om den skal tøs op dagen før. Vises ikke for
+    # husstanden; bruges af traening.py til at bytte retter efter dagens aktivitet.
+    retinfo: dict[str, dict] = field(default_factory=dict)
 
     @property
     def varer_i_alt(self) -> float:
@@ -97,7 +101,13 @@ def _gem_alle(planer: list[Madplan]) -> None:
 
 
 def gem(
-    butik: str, retter: list[str], linjer: list[NyLinje], gebyrer: float = 0.0, note: str | None = None, opskrifter: dict | None = None
+    butik: str,
+    retter: list[str],
+    linjer: list[NyLinje],
+    gebyrer: float = 0.0,
+    note: str | None = None,
+    opskrifter: dict | None = None,
+    retinfo: dict | None = None,
 ) -> Madplan:
     butik = (tekst(butik, "butik") or "").lower().replace(" + ", "+").replace("nemlig+bilka", "begge").replace("bilka+nemlig", "begge")
     if butik not in (*BUTIKKER, "begge"):
@@ -143,6 +153,7 @@ def gem(
         note=tekst(note, "note", 500),
         historik=[f"{_nu()} oprettet"],
         opskrifter=_opskrifter(opskrifter),
+        retinfo=_retinfo(retinfo),
     )
     # En ny plan erstatter de ventende: så gælder "bestil" altid den seneste version
     for gammel in planer:
@@ -165,6 +176,67 @@ def _opskrifter(vaerdi: dict | None) -> dict[str, str]:
             raise LokalFejl(f"Opskriften til {ret!r} skal have et https-link.")
         ud[ret] = link
     return ud
+
+
+NIVEAUER = ("rolig", "normal", "hård", "meget hård")
+
+
+def _retinfo(vaerdi: dict | None) -> dict[str, dict]:
+    if not vaerdi:
+        return {}
+    if not isinstance(vaerdi, dict) or len(vaerdi) > 14:
+        raise LokalFejl('retinfo skal være {"Tir: Wok": {"niveau": "hård", "fast": false, "optoe": false}} for højst 14 retter.')
+    ud = {}
+    for ret, info in vaerdi.items():
+        ret = tekst(ret, "ret", 120)
+        if not ret or not isinstance(info, dict):
+            raise LokalFejl("Hver ret i retinfo skal have et objekt med niveau, fast og optoe.")
+        niveau = str(info.get("niveau") or "normal").lower()
+        if niveau not in NIVEAUER:
+            raise LokalFejl(f"niveau for {ret!r} skal være en af: {', '.join(NIVEAUER)}.")
+        ud[ret] = {"niveau": niveau, "fast": bool(info.get("fast")), "optoe": bool(info.get("optoe"))}
+    return ud
+
+
+def info_til(p: Madplan, ret: str) -> dict:
+    """Retinfo til en ret (samme tekst, en kortere eller længere udgave, eller samme dag)."""
+    if ret in p.retinfo:
+        return p.retinfo[ret]
+    for noegle_, info in p.retinfo.items():
+        if noegle_.lower() in ret.lower() or ret.lower() in noegle_.lower():
+            return info
+    dag = _dag(ret)
+    samme = [info for noegle_, info in p.retinfo.items() if dag and _dag(noegle_) == dag]
+    return samme[0] if len(samme) == 1 else {}
+
+
+def byt(kode: str, i: int, j: int, hvem: str = "") -> Madplan:
+    """Byt retterne på plads i og j i planen (dagene bliver, retterne flytter), med deres
+    opskriftslinks og retinfo. Bruges af lytteren uden AI, når husstanden svarer ja."""
+    planer = _alle()
+    p = next((x for x in planer if x.kode == kode), None)
+    if p is None:
+        raise LokalFejl(f"Planen {kode} findes ikke.")
+    if not (0 <= i < len(p.retter) and 0 <= j < len(p.retter)) or i == j:
+        raise LokalFejl("De to retter skal være to forskellige dage i planen.")
+    a, b = p.retter[i], p.retter[j]
+    dag_a, ret_a = (a.split(":", 1) + [""])[:2] if ":" in a else ("", a)
+    dag_b, ret_b = (b.split(":", 1) + [""])[:2] if ":" in b else ("", b)
+    ny_a, ny_b = f"{dag_a}:{ret_b}" if dag_a else ret_b.strip(), f"{dag_b}:{ret_a}" if dag_b else ret_a.strip()
+    link_a, link_b = link_til(p, a), link_til(p, b)
+    info_a, info_b = info_til(p, a), info_til(p, b)
+    p.retter[i], p.retter[j] = ny_a, ny_b
+    for gammel in (a, b):
+        p.opskrifter.pop(gammel, None)
+        p.retinfo.pop(gammel, None)
+    for ny, link, info in ((ny_b, link_a, info_a), (ny_a, link_b, info_b)):
+        if link:
+            p.opskrifter[ny] = link
+        if info:
+            p.retinfo[ny] = info
+    p.historik.append(f"{_nu()} byttet: {dag_a.strip() or i} ↔ {dag_b.strip() or j}" + (f" ({hvem})" if hvem else ""))
+    _gem_alle(planer)
+    return p
 
 
 def hent(kode: str | None = None) -> Madplan:
@@ -251,6 +323,9 @@ def sms_tekst(p: Madplan) -> str:
 VALG = {
     "ugebudget_kr": "denne uges budget, når det er justeret fra profilens (færre dage, gæster)",
     "opskrifter": '{"Man: Laks med kartofler": "https://…"}: link til hver rets opskrift (til favoritter)',
+    "retinfo": '{"Tir: Wok": {"niveau": "hård", "fast": false, "optoe": false}}: for hver ret hvilken slags dag '
+    "den passer til (rolig, normal, hård, meget hård), om den aldrig må flyttes (fersk fisk) og om den skal tøs op "
+    "dagen før (frost, vildt). Bruges til at bytte retter efter træning; vises ikke for husstanden",
 }
 
 
@@ -272,7 +347,7 @@ def gem_fra_vaerktoej(
     budget = valg.get("ugebudget_kr")
     if budget is not None and not (isinstance(budget, (int, float)) and 0 < budget <= 20000):
         raise LokalFejl("ugebudget_kr skal være et tal mellem 0 og 20.000.")
-    p = gem(butik, retter, linjer, gebyrer, note, valg.get("opskrifter"))
+    p = gem(butik, retter, linjer, gebyrer, note, valg.get("opskrifter"), valg.get("retinfo"))
     budget = budget or profil.hent().ugebudget_kr
     advarsel = f"Planen koster {p.i_alt:.0f} kr, over ugens budget på {budget:.0f} kr." if budget and p.i_alt > budget else None
     return svar(p, advarsel=advarsel, ugens_budget=budget, **_bestil_der_venter(p, budget))

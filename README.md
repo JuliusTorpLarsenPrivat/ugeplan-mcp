@@ -57,6 +57,20 @@ Intet kører i skyen. Alt kører på din egen maskine, og Telegram-botten svarer
 | En computer med AI-appen åben, når I laver madplan | Madplan, priser, kurv, opskrifter og profil. |
 | + Telegram | Husstanden svarer fra telefonen, mens planen laves. Beskeder imellem bliver hentet, når appen er åben igen, hvis de er under et døgn gamle (Telegrams grænse). |
 | + en maskine, der altid er tændt med appen åben (fx en Mac mini) | Botten svarer altid, og beholdningen kan opdateres fra telefonen hver dag. Intet går tabt. |
+| + Garmin-ur og en Garmin-MCP-server (min egen, garmin-mcp, er ikke offentlig endnu) | Menuen lægges efter jeres træningsmønster. |
+| + garmin-mcp med login på maskinen, der altid er tændt | **Agil plan efter træning:** botten foreslår at bytte retter, når en dag bliver hårdere eller roligere end planlagt. Se nedenfor. |
+
+### Agil plan efter træning
+
+Med Garmin-data (kun for dem, der har sagt ja i profilen) følger planen den træning, der faktisk sker:
+
+- **Når planen laves,** lægges retter rige på protein og energi på de dage, I plejer at træne, inden for jeres kost. Fersk fisk ligger tidligt i ugen, så resten er nem at bytte rundt i.
+- **I løbet af ugen** tjekker botten hver halve time mellem kl. 6 og 21, uden AI. Bliver dagen hård, og dagens ret ikke passer til det, skriver den fx *"Hård dag i dag: byt fredagens nakkekoteletter og dagens shakshuka? Svar ja"*. Træner I efter aftensmad, gælder forslaget morgendagens ret. Er en planlagt hård dag rolig, foreslår den at gemme den hårde ret.
+- **Første "ja" afgør det.** Botten bytter retterne og opdaterer den fastgjorte ugemenu. Intet svar inden aftensmad betyder, at intet sker.
+- Fersk fisk flyttes aldrig, og noget, der skal tøs op, flyttes aldrig til i dag. Der kommer højst ét forslag om dagen, og kl. 20 en påmindelse, hvis noget skal op af fryseren til i morgen.
+- I ser kun "hård dag" eller "rolig dag", aldrig tal fra uret.
+
+Opsætning: log ind i garmin-mcp for hver person, kør `ugeplan-mcp garmin-opsaet <mappe med garmin-mcp>`, og sig til AI'en, hvem der må bruges, fx *"Julius må bruge sine Garmin-data"*. Uden Garmin opfører planen sig som altid.
 
 ### Beholdningen fra telefonen
 
@@ -75,7 +89,7 @@ Du skal bruge en AI-app med MCP (se *Virker med*), [uv](https://docs.astral.sh/u
 **1. Kør guiden** i en terminal. Den tager dig gennem butikker, Telegram og din AI-app, ét trin ad gangen, og alt kan springes over:
 
 ```powershell
-uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.33.0 ugeplan-mcp opsaet
+uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.34.0 ugeplan-mcp opsaet
 ```
 
 Login gemmes kun i styresystemets nøglering. Til sidst vælger du din AI-app, og guiden viser præcis, hvad du skal sætte ind og hvor.
@@ -130,7 +144,7 @@ Forløbet er en lang samtale med mange værktøjskald. Jo bedre modellen er til 
 - Alle kald går gennem `vagt.py`, som kun tillader butikkernes egne adresser og afviser alt, der ligner bestilling, betaling eller valg af levering.
 - Navn, adresse, telefon og e-mail fjernes fra svarene, før AI'en ser dem.
 - Det, AI'en ser, sendes til den AI-udbyder, din app bruger (fx Anthropic, OpenAI eller GitHub), som en del af samtalen.
-- Lås installationen til en version (`@v0.33.0`), så koden ikke ændrer sig uden din viden.
+- Lås installationen til en version (`@v0.34.0`), så koden ikke ændrer sig uden din viden.
 
 ## Begrænsninger
 

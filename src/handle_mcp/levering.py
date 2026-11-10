@@ -225,14 +225,23 @@ def planens_start(retter: list[str], fra: date) -> date | None:
     forkert advarsel om, at levering tirsdag var for sent)."""
     # Dagene står i rækkefølge: "Man, Tir … Søn" lavet en søndag slutter NÆSTE søndag, ikke i dag
     # (fundet i uge 46: "Søn: Rødspætte" blev til samme søndag, og advarslen sagde "starter søndag").
-    dage, forrige = [], fra
-    for ret in retter:
-        if (d := ret_dato(ret, forrige)) is None:
-            continue
-        forrige = d
-        if not _uden_indkoeb(ret):
-            dage.append(d)
+    dage = [d for ret, d in zip(retter, ret_datoer(retter, fra)) if d and not _uden_indkoeb(ret)]
     return min(dage) if dage else None
+
+
+def ret_datoer(retter: list[str], fra: date) -> list[date | None]:
+    """Datoen for hver ret, i rækkefølge (en søndagsplan med "Søn" sidst slutter næste søndag)."""
+    ud, forrige = [], fra
+    for ret in retter:
+        d = ret_dato(ret, forrige)
+        ud.append(d)
+        if d:
+            forrige = d
+    return ud
+
+
+def uden_indkoeb(ret: str) -> bool:
+    return _uden_indkoeb(ret)
 
 
 def ret_dato(ret: str, fra: date) -> date | None:

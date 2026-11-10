@@ -28,6 +28,10 @@ class Profil:
     # Ønsker, som Telegram-botten selv har gemt ("husk …", "fremover …", "vi kan ikke lide …").
     # Står her, til Claude har flyttet dem til det rette felt, så de aldrig bliver glemt.
     fra_husstanden: list[str] = field(default_factory=list)
+    # Personer, der har sagt ja til, at madplanen bruger deres Garmin-data, fx
+    # [{"navn": "Julius", "konto": "standard"}]. "konto" er garmin-mcp's person (standard: navnet).
+    garmin: list[dict] = field(default_factory=list)
+    aftensmad: str = "18:30"  # hvornår I spiser; træning før/efter afgør, om i dag eller i morgen byttes
 
 
 # Ord, der betyder "gem det til fremover". Bevidst bred: hellere et ønske for meget i profilen
@@ -66,6 +70,9 @@ FELTER = {
     "faste_maaltider": "liste: måltider, der er de samme hver uge og skal med i indkøb og pris",
     "varepraeferencer": "liste: krav til bestemte varer, fx 'Mørk chokolade: mindst 85 %'",
     "fra_husstanden": "liste: ønsker, botten har gemt fra Telegram; send [] når de er flyttet",
+    "garmin": 'liste: personer, der har sagt ja til, at madplanen bruger deres Garmin-data, fx [{"navn": "Julius"}]; '
+    '"konto" kun hvis garmin-mcp-personen hedder noget andet; [] = ingen',
+    "aftensmad": 'hvornår I spiser aftensmad, "TT:MM" (standard "18:30")',
 }
 
 
@@ -92,6 +99,20 @@ def opdater_fra_dict(aendringer: dict) -> Profil:
     return opdater(**aendringer)
 
 
+def _garmin(personer: list) -> list[dict]:
+    if not isinstance(personer, list) or len(personer) > 10:
+        raise LokalFejl('garmin skal være en liste af personer, fx [{"navn": "Julius"}].')
+    ud = []
+    for x in personer:
+        x = {"navn": x} if isinstance(x, str) else x
+        navn = tekst((x or {}).get("navn"), "navn", 40) if isinstance(x, dict) else None
+        if not navn:
+            raise LokalFejl('Hver Garmin-person skal have et navn, fx {"navn": "Julius"}.')
+        konto = tekst(x.get("konto"), "konto", 40)
+        ud.append({"navn": navn, **({"konto": konto} if konto and konto != navn else {})})
+    return ud
+
+
 def hent() -> Profil:
     data = laes("profil")
     kendte = Profil.__dataclass_fields__
@@ -107,6 +128,8 @@ def opdater(
     faste_maaltider: list[str] | None = None,
     varepraeferencer: list[str] | None = None,
     fra_husstanden: list[str] | None = None,
+    garmin: list[dict] | None = None,
+    aftensmad: str | None = None,
 ) -> Profil:
     """Ret de felter, der er givet. Felter der ikke er givet, bliver som de var.
     Lister erstattes helt, så Claude skal sende hele den nye liste."""
@@ -131,5 +154,12 @@ def opdater(
         p.varepraeferencer = tekster(varepraeferencer, "vareønsker", 30, 150)
     if fra_husstanden is not None:  # typisk [] efter at ønskerne er flyttet til de rette felter
         p.fra_husstanden = tekster(fra_husstanden, "ønsker fra husstanden", MAKS_FRA_HUSSTANDEN, 300)
+    if garmin is not None:
+        p.garmin = _garmin(garmin)
+    if aftensmad is not None:
+        if not re.fullmatch(r"([01]?\d|2[0-3])[:.][0-5]\d", str(aftensmad).strip()):
+            raise LokalFejl('aftensmad skal være et klokkeslæt som "18:30".')
+        t, m = re.split(r"[:.]", str(aftensmad).strip())
+        p.aftensmad = f"{int(t):02d}:{m}"
     skriv("profil", asdict(p))
     return p

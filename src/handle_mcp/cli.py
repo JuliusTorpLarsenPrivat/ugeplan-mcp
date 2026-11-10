@@ -8,6 +8,8 @@
     ugeplan-mcp telegram [timer] lytter efter jeres svar (standard 24 timer). "OK UGE-xxxx" fylder kurven
     ugeplan-mcp telegram-par    ny kode til at koble en telefon på
     ugeplan-mcp telegram-frakobl kobler alle telefoner fra
+    ugeplan-mcp garmin-opsaet MAPPE [VENV]
+                               lytteren henter dagens træningsniveau fra garmin-mcp i MAPPE
     ugeplan-mcp http-noegle     laver en ny adgangsnøgle til HTTP-tilstand (vises kun én gang)
     ugeplan-mcp http [host] [port]
                                kører serveren over HTTP i stedet for stdio.
@@ -111,6 +113,13 @@ async def _telegram_lyt(timer: float, foraelder: int | None = None) -> int:
             # og den gik tabt, fordi lytteren stoppede her. Nu bliver den gemt og besvaret.
             afsluttet = True
             print(f"{time.strftime('%H:%M')} Ugens plan er afsluttet. Lytter videre efter rettelser.", flush=True)
+        try:  # agil madplan efter træning (selvbegrænsende: hver 30. min kl. 6-21)
+            from handle_mcp import traening
+
+            for h in await traening.koer():
+                print(f"{time.strftime('%H:%M')} {h}", flush=True)
+        except Exception as fejl:  # noqa: BLE001  må aldrig stoppe lytteren
+            print(f"{time.strftime('%H:%M')} Træningstjek fejlede: {type(fejl).__name__}", flush=True)
         try:
             for h in await telegram.hent_og_haandter(vent_sekunder=25):
                 print(f"{time.strftime('%H:%M')} {h}", flush=True)
@@ -300,6 +309,13 @@ def kommando(args: list[str]) -> int:
             from handle_mcp import telegram
 
             print(f"{telegram.frakobl_alle()} telefoner er koblet fra. Kør telegram-par for at koble på igen.")
+            return 0
+        case ["garmin-opsaet", mappe, *venv] if len(venv) <= 1:
+            from handle_mcp import traening
+
+            traening.gem_konfiguration(mappe, venv[0] if venv else None)
+            print(f"Lytteren henter nu dagens niveau fra garmin-mcp i {mappe}.")
+            print("Husk at sige ja i profilen, fx: \"Julius må bruge sine Garmin-data\" til AI-assistenten.")
             return 0
         case ["telegram", "--foraelder", pid] if pid.isdigit():
             return asyncio.run(_telegram_lyt(24.0, foraelder=int(pid)))

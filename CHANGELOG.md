@@ -1,6 +1,6 @@
 # Ændringer
 
-## Næste version
+## 0.30.0 (10/11-2026)
 
 - Rettet: BilkaToGo viste ikke, at en vare var frost. Nu står der "400 g / frost" som hos nemlig, og forløbet forbyder frost, når profilen siger "kun fersk".
 - Spørgsmålet om køleskabet beder om ca. mængder, og varer uden mængde kommer på "Tjek, at I har" med den mængde, ugen skal bruge.

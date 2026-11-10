@@ -1,5 +1,12 @@
 # Ændringer
 
+## 0.36.0 (10/11-2026)
+
+- **Ugens budget gælder en normal uge** (beskrevet i profilens note). Færre dage hjemme, gæster og andre ændringer tilpasser budgettet, og AI'en skriver, hvordan den regnede.
+- **Eget vildt og kød fra fryseren trækkes fra budgettet**, så det kan ses i ugens pris.
+- Frost-reglen gælder nu også kød ("kød fra frost"). Husstandens eget vildt fra fryseren må gerne bruges.
+- Ny guide: [docs/PROFIL.md](docs/PROFIL.md) forklarer profilens felter, giver gode råd og viser et eksempel.
+
 ## 0.35.0 (10/11-2026)
 
 - **Større pakker, færre penge:** `sammenlign_liste` siger i linjens `tip`, når dobbelt mængde af samme vare (større pakke eller mængdetilbud) er mindst 15 % billigere, eller når den valgte pakke allerede dækker to retter.

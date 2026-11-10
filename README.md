@@ -89,7 +89,7 @@ Du skal bruge en AI-app med MCP (se *Virker med*), [uv](https://docs.astral.sh/u
 **1. Kør guiden** i en terminal. Den tager dig gennem butikker, Telegram og din AI-app, ét trin ad gangen, og alt kan springes over:
 
 ```powershell
-uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.35.0 ugeplan-mcp opsaet
+uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.36.0 ugeplan-mcp opsaet
 ```
 
 Login gemmes kun i styresystemets nøglering. Til sidst vælger du din AI-app, og guiden viser præcis, hvad du skal sætte ind og hvor.
@@ -98,7 +98,7 @@ Login gemmes kun i styresystemets nøglering. Til sidst vælger du din AI-app, o
 
 **3. Skriv "lav madplan" til assistenten.** Første gang stiller den 4 korte runder spørgsmål om jeres husstand: hvor mange I er og budget, hvad I kan lide og ikke spiser, faste måltider og bestemte varer, og jeres favoritretter. Svarene gemmes i profilen, og bagefter kommer ugens plan.
 
-Profilen kan rumme alt fra "kød altid økologisk" til "chokolade mindst 85 %". Du ændrer den ved bare at sige det, fx *"husk, vi ikke kan lide fennikel"*, eller ved at skrive *"gennemgå vores profil"*.
+Profilen kan rumme alt fra "kød altid økologisk" til "chokolade mindst 85 %". Du ændrer den ved bare at sige det, fx *"husk, vi ikke kan lide fennikel"*, eller ved at skrive *"gennemgå vores profil"*. [docs/PROFIL.md](docs/PROFIL.md) forklarer felterne, giver gode råd og viser et eksempel på en profil.
 
 Guiden kan køres igen når som helst. `ugeplan-mcp status` viser, hvad der er sat op.
 
@@ -144,7 +144,7 @@ Forløbet er en lang samtale med mange værktøjskald. Jo bedre modellen er til 
 - Alle kald går gennem `vagt.py`, som kun tillader butikkernes egne adresser og afviser alt, der ligner bestilling, betaling eller valg af levering.
 - Navn, adresse, telefon og e-mail fjernes fra svarene, før AI'en ser dem.
 - Det, AI'en ser, sendes til den AI-udbyder, din app bruger (fx Anthropic, OpenAI eller GitHub), som en del af samtalen.
-- Lås installationen til en version (`@v0.35.0`), så koden ikke ændrer sig uden din viden.
+- Lås installationen til en version (`@v0.36.0`), så koden ikke ændrer sig uden din viden.
 
 ## Begrænsninger
 

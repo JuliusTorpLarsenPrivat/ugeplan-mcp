@@ -34,29 +34,41 @@ Profilen er det, der gør madplanerne gode. Den fortæller AI-assistenten, hvem 
 
 **Gem favoritter.** Siger I, at en ret var god, gemmer assistenten den som favorit og tager den med igen senere, på skift.
 
-## Et eksempel (opdigtet husstand)
+## Et eksempel: vores egen profil
+
+Sådan ser profilen ud hos os, der har lavet ugeplan-mcp: et par, hvor den ene går på jagt. Linjerne markeret med (ekstra) har vi ikke selv, men de viser, hvad man også kan skrive.
 
 ```text
 Personer: 2
 Ugebudget: 1.200 kr
 Præferencer:
   - proteinrigt
-  - kød altid økologisk eller eget vildt (absolut)
-  - økologisk frugt og grønt, når det er muligt
+  - økologi har høj prioritet: vælg øko, når det findes, også når det koster mere
+  - høj kødkvalitet: kød altid øko eller vores eget vildt, aldrig konventionelt (absolut)
   - hurtigt på hverdage (ca. 30 min)
   - meget lidt ultraforarbejdet mad
+  - kun aftensmad på hverdage (frokost spises på arbejdet)
+  - den ene af os er jæger og kommer af og til selv med vildtkød
+  - gerne den samme ret to dage, hvis det er billigere at lave en stor portion
+  - vegetar mandag (ekstra)
+  - børnevenligt: ikke stærk mad (ekstra)
 Undgå:
   - opdrættet fisk (kun vildfanget)
-  - fisk og kød fra frost (kun fersk; eget vildt fra fryseren er fint)
-  - fennikel
+  - fisk fra frost (kun fersk fisk)
+  - kød fra frost (kun fersk kød; eget vildt fra fryseren er fint)
+  - nødder: allergi (ekstra)
 Faste måltider:
   - Morgenmad hver dag, 2 pers.: græsk yoghurt med vindruer, mandler og mørk chokolade
-  - Frokost lørdag og søndag hjemme: rugbrød, æg, avocado og grønt
+  - Frokost kun lørdag og søndag hjemme (hverdage spiser vi på arbejdet)
+  - Madpakke til 1 barn mandag-fredag: rugbrød med pålæg og grøntsagsstave (ekstra)
 Vareønsker:
-  - Mørk chokolade: mindst 85 %
+  - Mørk chokolade: meget mørk, mindst 85 %
+  - Mælk: økologisk letmælk, aldrig skummet (ekstra)
+  - Kaffe: hele bønner, mørkristet (ekstra)
 Aftensmad: 18:30
-Note: Normal uge: 2 personer, aftensmad hjemme alle dage, morgenmad alle dage,
-      frokost hjemme kun i weekenden.
+Garmin: den af os, der går på jagt
+Note: Normal uge: 2 personer, aftensmad hjemme alle 7 dage, morgenmad hjemme alle dage,
+      frokost hjemme kun lørdag og søndag. Budgettet gælder den uge.
 ```
 
 Kopier gerne eksemplet og ret det til jer. Sig det til assistenten med jeres egne ord, så gemmer den det.

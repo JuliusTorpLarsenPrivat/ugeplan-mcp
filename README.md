@@ -57,6 +57,20 @@ Intet kører i skyen. Alt kører på din egen maskine, og Telegram-botten svarer
 | En computer med AI-appen åben, når I laver madplan | Madplan, priser, kurv, opskrifter og profil. |
 | + Telegram | Husstanden svarer fra telefonen, mens planen laves. Beskeder imellem bliver hentet, når appen er åben igen, hvis de er under et døgn gamle (Telegrams grænse). |
 | + en maskine, der altid er tændt med appen åben (fx en Mac mini) | Botten svarer altid, og beholdningen kan opdateres fra telefonen hver dag. Intet går tabt. |
+| + Garmin-ur og en Garmin-MCP-server (min egen, garmin-mcp, er ikke offentlig endnu) | Menuen lægges efter jeres træningsmønster. |
+| + garmin-mcp med login på maskinen, der altid er tændt | **Agil plan efter træning:** botten foreslår at bytte retter, når en dag bliver hårdere eller roligere end planlagt. Se nedenfor. |
+
+### Agil plan efter træning
+
+Med Garmin-data (kun for dem, der har sagt ja i profilen) følger planen den træning, der faktisk sker:
+
+- **Når planen laves,** lægges retter rige på protein og energi på de dage, I plejer at træne, inden for jeres kost. Fersk fisk ligger tidligt i ugen, så resten er nem at bytte rundt i.
+- **I løbet af ugen** tjekker botten hver halve time mellem kl. 6 og 21, uden AI. Bliver dagen hård, og dagens ret ikke passer til det, skriver den fx *"Hård dag i dag: byt fredagens nakkekoteletter og dagens shakshuka? Svar ja"*. Træner I efter aftensmad, gælder forslaget morgendagens ret. Er en planlagt hård dag rolig, foreslår den at gemme den hårde ret.
+- **Første "ja" afgør det.** Botten bytter retterne og opdaterer den fastgjorte ugemenu. Intet svar inden aftensmad betyder, at intet sker.
+- Fersk fisk flyttes aldrig, og noget, der skal tøs op, flyttes aldrig til i dag. Der kommer højst ét forslag om dagen, og kl. 20 en påmindelse, hvis noget skal op af fryseren til i morgen.
+- I ser kun "hård dag" eller "rolig dag", aldrig tal fra uret.
+
+Opsætning: log ind i garmin-mcp for hver person, kør `ugeplan-mcp garmin-opsaet <mappe med garmin-mcp>`, og sig til AI'en, hvem der må bruges, fx *"Julius må bruge sine Garmin-data"*. Uden Garmin opfører planen sig som altid.
 
 ### Beholdningen fra telefonen
 

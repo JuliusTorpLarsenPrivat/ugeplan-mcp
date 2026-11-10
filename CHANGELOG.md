@@ -1,5 +1,18 @@
 # Ændringer
 
+## Næste version
+
+- **Agil plan efter træning** (kræver Garmin-data og en maskine, der er tændt):
+  - Når planen laves, lægges energirige retter på de dage, I plejer at træne.
+  - I løbet af ugen foreslår botten uden AI at bytte retter, når en dag bliver hårdere eller roligere end planlagt.
+  - "ja" bytter retterne og den fastgjorte menu.
+  - Fersk fisk flyttes aldrig, og noget, der skal tøs op, flyttes aldrig til i dag. Der kommer højst ét forslag om dagen og en påmindelse kl. 20 om optøning.
+- Profilen har fået felterne `garmin` (hvem der har sagt ja) og `aftensmad` (standard 18.30).
+- Madplanen gemmer `retinfo` pr. ret: hvilken slags dag retten passer til, om den er fast, og om den skal tøs op.
+- Ny kommando: `ugeplan-mcp garmin-opsaet MAPPE [VENV]`.
+- Forslag og påmindelser gemmes i `haendelser.json`.
+- IDEER.md med idéer til senere.
+
 ## 0.33.0 (10/11-2026)
 
 - **Beholdningen fra telefonen:** "skudt et rådyr, ligger i fryseren", "har 2 kg kartofler" og "fortryd" klares af botten selv, med svar med det samme. Mens en madplan er i gang, går beskederne til AI'en som før.

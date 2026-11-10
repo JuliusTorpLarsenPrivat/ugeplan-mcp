@@ -28,7 +28,7 @@ import httpx
 import keyring
 import keyring.errors
 
-from handle_mcp import beholdning_besked, lokal, madplan, profil
+from handle_mcp import beholdning_besked, lokal, madplan, profil, traening
 from handle_mcp.lokal import laes, skriv
 from handle_mcp.login import TJENESTE
 from handle_mcp.vagt import VagtFejl, ny_klient, send
@@ -351,6 +351,17 @@ async def send_til_alle(tekst: str) -> int:
     return len(modtagere)
 
 
+async def send_fra_botten(tekst: str) -> int:
+    """Botten skriver selv til hele husstanden (forslag og påmindelser, uden AI). Tæller ikke som
+    "AI'en er i gang", så botten bliver ved med at klare beholdningen selv."""
+    n = 0
+    for chat_id in chats():
+        await _svar(chat_id, tekst)
+        n += 1
+    _gem_besked("handle-botten", tekst, laest=True)
+    return n
+
+
 async def _svar(chat_id: str, tekst: str) -> None:
     try:
         await api("sendMessage", chat_id=int(chat_id), text=tekst[:MAKS_TEGN])
@@ -500,6 +511,10 @@ async def haandter(opdatering: dict) -> str | None:
         return f"besked fra ukendt chat ignoreret ({len(tekst)} tegn, tal: {', '.join(tal) or 'ingen'})"
     if await _godkendelse(chat_id, navn, tekst):
         return f"godkendelse fra {navn} behandlet"
+    if svar := await traening.besvar(tekst, navn):  # "ja" til dagens bytteforslag, uden AI
+        _gem_besked(navn, tekst, laest=True)
+        await _videresend(chat_id, navn, tekst)
+        return svar
     if " ".join(tekst.lower().strip(" ?!.").split()) in MENU_ORD:
         if p := madplan.seneste_fyldte():
             await send_ugemenu(p, fastgoer=False)

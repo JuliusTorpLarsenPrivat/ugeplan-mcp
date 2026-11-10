@@ -64,10 +64,19 @@ PROFILENS KRAV ER KRAV (økologi, kød, fisk, mærker)
   ORDENTLIGT). Bryd aldrig et absolut krav for at spare.
 
 UGENS BUDGET (regn det ud, før du laver menuen)
-- Profilens ugebudget_kr er for en hel uge (7 dage) til profilens antal personer.
-- Færre dage: skalér ned (6 af 7 dage → budget × 6/7). Gæster: skalér op efter antal ekstra
-  måltider (2 gæster til 1 aftensmad hos 2 personer ≈ + 2 aftensmåltider). Skriv kort, hvordan
-  du regnede, og send ugens budget til gem_madplan som valg={"ugebudget_kr": …}.
+- Profilens ugebudget_kr gælder en NORMAL uge: alle aftener hjemme for profilens antal
+  personer, plus de faste måltider (fx morgenmad alle dage og frokost i weekenden). Står der en
+  beskrivelse af den normale uge i profilens note, så gælder den.
+- Afviger ugen, så tilpas budgettet efter det og skriv kort, hvordan du regnede:
+  - Færre aftener hjemme: skalér ned (6 af 7 aftener → budget × 6/7).
+  - Gæster: læg ekstra måltider til (2 gæster til én aftensmad hos 2 personer ≈ + 2
+    aftensmåltider, dvs. budget × 2/14 for en uge med 14 aftensmåltider).
+  - Andre ændringer (fx flere frokoster hjemme i en ferie): skalér på samme måde.
+- EGNE VARER SKAL KUNNE SES I UGENS BUDGET: bruger ugen eget vildt eller kød fra fryseren, så træk et
+  skøn over, hvad kødet ville have kostet i butikken, fra ugens budget, fx "Ugens budget: 1.200
+  kr − ca. 120 kr (rådyr fra egen fryser) = 1.080 kr". Ellers bruger planen de sparede penge på
+  noget andet, og I kan ikke se, at fryseren har sparet jer for noget.
+- Send ugens budget til gem_madplan som valg={"ugebudget_kr": …}.
 - Sig altid tydeligt, hvad du sammenligner med: "ugens budget" (ovenstående) eller "normalt
   forbrug" (det vi plejer at bruge ifølge koebsmoenster). De to tal er ikke det samme.
 

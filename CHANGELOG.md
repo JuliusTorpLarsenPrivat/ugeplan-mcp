@@ -1,6 +1,6 @@
 # Ændringer
 
-## Næste version
+## 0.33.0 (10/11-2026)
 
 - **Beholdningen fra telefonen:** "skudt et rådyr, ligger i fryseren", "har 2 kg kartofler" og "fortryd" klares af botten selv, med svar med det samme. Mens en madplan er i gang, går beskederne til AI'en som før.
 - **Lytteren følger AI-appen:** den starter, når serveren starter, og kører, så længe appen er åben. Den stopper ikke længere efter 24 timer. På en maskine, der altid er tændt, svarer botten altid.

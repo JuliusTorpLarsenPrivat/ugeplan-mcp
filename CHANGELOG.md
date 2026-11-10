@@ -1,6 +1,6 @@
 # Ændringer
 
-## Næste version
+## 0.32.0 (10/11-2026)
 
 - **Åben for alle AI-apps med MCP.** Guiden spørger, hvilken app du bruger (Claude Desktop, Claude Code, Cursor, VS Code eller en anden), og viser præcis, hvad der skal sættes ind. README'en har en tabel over, hvad der virker.
 - Telegram-beskederne siger "AI-assistenten" i stedet for "Claude".

@@ -71,6 +71,35 @@ UGENS BUDGET (regn det ud, før du laver menuen)
 - Sig altid tydeligt, hvad du sammenligner med: "ugens budget" (ovenstående) eller "normalt
   forbrug" (det vi plejer at bruge ifølge koebsmoenster). De to tal er ikke det samme.
 
+STØRRE PAKKER: ÉT KØB TIL TO RETTER (der er penge at hente)
+Fundet i uge 46: "det er fint, hvis vi nogle dage får det samme, hvis det er billigere", men
+menuen blev ikke lavet om.
+- Prisen pr. kg eller pr. stk falder tit med pakkestørrelsen: 8 kyllingelår er billigere pr. stk
+  end 2, og 800 g hakket okse billigere pr. kg end 400 g. Mængdetilbud ("Mix 2 for 79") virker
+  på samme måde. Sammenlign derfor kr/kg eller kr/stk på tværs af pakkestørrelser, ikke kun
+  prisen for det, én ret skal bruge.
+- Planlæg efter det allerede i TRIN 2. Tag 1-2 par, når det sparer mindst ca. 15 % på varen:
+  - Samme hovedingrediens to dage med forskelligt tilbehør, fx 800 g hakket okse til kødsovs
+    tirsdag og chili torsdag, eller 8 kyllingelår til ovnret og wok.
+  - Samme tilbehør to dage med forskelligt kød, fx en stor portion ovnkartofler eller ris.
+- OPFIND IKKE NYE OPSKRIFTER. Byg parret af dele fra rigtige opskrifter (opskriftssiderne
+  eller vis_opskrifter): tilbehøret fra den ene og kødet fra den anden, eller kødet fra én og
+  tilbehør fra to andre. Fra brugeren: "så er det ikke dig, der opfinder opskrifter, men du
+  sammensætter blot et par dele af eksisterende opskrifter anderledes." Gem linket til den
+  opskrift, hver del kommer fra.
+- Skriv det tydeligt i menuen, så vi kan se det og lave dobbelt portion den første dag, fx:
+    "Man: Nakkekoteletter med ovnkartofler (lav dobbelt portion kartofler, til tirsdag)"
+    "Tir: Kyllingelår med ovnkartofler fra mandag"
+    "Tor: Kødsovs (lav dobbelt, halvdelen til lørdag) · Lør: Chili med kødsovsen fra torsdag"
+- Det skal stadig være god mad og passe til profilen. Den samme ret to gange kun, hvis vi har
+  sagt, det er ok.
+- Friskt kød: de to dage ligger tæt (senest 2-3 dage efter levering), eller halvdelen fryses
+  samme dag. Skriv det i menuen, fx "(halvdelen i fryseren til fredag)", og sæt "optoe" i
+  retinfo på den sidste ret. Fersk fisk deles aldrig over flere dage.
+- I sammenlign_liste står de to retters mængde samlet på én linje ("800 g hakket oksekød").
+  Står der "Større køb er billigere" i en linjes `tip`, så overvej et par ud fra det.
+- Skriv besparelsen kort i prisbeskeden, fx "Hakket okse 800 g til to retter: −35 kr".
+
 SVARENE ER OFTE INDTALT
 - Diktering giver fejl og ingen tegnsætning (fx "en halv tær" kan være en halv tærte eller en
   halv tærtedej). Gæt det mest sandsynlige ud fra sammenhængen, og skriv gættet i menubeskeden

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1124" width="1240" height="1124" font-family="Segoe UI, -apple-system, Helvetica, Arial, sans-serif">
+<title>Eksempel på en uge i Telegram med ugeplan-mcp</title>
+<rect width="1240" height="1124" fill="#0d1117"/>
+<text x="620.0" y="40" fill="#7ee2a8" font-size="20" font-weight="600" text-anchor="middle" letter-spacing="1">EKSEMPEL · EN UGE I TELEGRAM</text>
+<rect x="20" y="60" width="580" height="1004" rx="34" fill="#0e1621" stroke="#2b3a4a" stroke-width="2"/>
+<rect x="20" y="60" width="580" height="76" rx="34" fill="#17212b"/><rect x="20" y="100" width="580" height="36" fill="#17212b"/>
+<circle cx="70" cy="98" r="22" fill="#2ea6a6"/><text x="70" y="106" fill="#fff" font-size="22" font-weight="700" text-anchor="middle">H</text>
+<text x="106" y="94" fill="#fff" font-size="22" font-weight="600">Handle</text><text x="106" y="119" fill="#7d8e9e" font-size="17">bot · Annas telefon</text>
+<rect x="38" y="150" width="460" height="270" rx="16" fill="#182533"/>
+<text x="54" y="186" fill="#ffffff" font-size="21">Hej! Ny madplan på vej.</text>
+<text x="54" y="215" fill="#ffffff" font-size="21">Varerne kan tidligst være her til</text>
+<text x="54" y="244" fill="#ffffff" font-size="21">aftensmaden tirsdag 17/11.</text>
+<text x="54" y="273" fill="#ffffff" font-size="21">1) Hvad har I i køleskabet? Skriv ca.</text>
+<text x="54" y="302" fill="#ffffff" font-size="21">hvor meget.</text>
+<text x="54" y="331" fill="#ffffff" font-size="21">2) Hvor mange aftener, og fra hvilken</text>
+<text x="54" y="360" fill="#ffffff" font-size="21">dag?</text>
+<text x="54" y="389" fill="#ffffff" font-size="21">3) Noget særligt denne uge?</text>
+<text x="486" y="410" fill="#6d8299" font-size="14" text-anchor="end">17:02</text>
+<rect x="122" y="434" width="460" height="125" rx="16" fill="#2b5278"/>
+<text x="138" y="470" fill="#ffffff" font-size="21">Rester til mandag, 1 kg kartofler, 6 æg</text>
+<text x="138" y="499" fill="#ffffff" font-size="21">og ½ l mælk. Hjemme alle dage, ingen</text>
+<text x="138" y="528" fill="#ffffff" font-size="21">gæster.</text>
+<text x="570" y="549" fill="#9cc1e6" font-size="14" text-anchor="end">17:05</text>
+<rect x="38" y="573" width="460" height="357" rx="16" fill="#182533"/>
+<text x="54" y="609" fill="#ffffff" font-size="21" font-weight="700">Forslag (2 pers., man–søn)</text>
+<text x="54" y="638" fill="#ffffff" font-size="21">Man: Rester</text>
+<text x="54" y="667" fill="#ffffff" font-size="21">Tir: Wok med svinemørbrad og broccoli</text>
+<text x="54" y="696" fill="#ffffff" font-size="21">Ons: Kylling i kokosmælk med ris</text>
+<text x="54" y="725" fill="#ffffff" font-size="21">Tor: Pasta med kødsovs</text>
+<text x="54" y="754" fill="#ffffff" font-size="21">Fre: Shakshuka med feta</text>
+<text x="54" y="783" fill="#ffffff" font-size="21">Lør: Nakkekoteletter med ovnkartofler</text>
+<text x="54" y="812" fill="#ffffff" font-size="21">Søn: Bøf med bagte rodfrugter</text>
+<text x="54" y="841" fill="#ffffff" font-size="21">Skøn: ca. 1.150 kr mod ugens budget på</text>
+<text x="54" y="870" fill="#ffffff" font-size="21">1.200 kr.</text>
+<text x="54" y="899" fill="#ffffff" font-size="21">Rettelser, eller er menuen god?</text>
+<text x="486" y="920" fill="#6d8299" font-size="14" text-anchor="end">17:07</text>
+<rect x="38" y="944" width="336" height="96" rx="16" fill="#182533"/>
+<text x="54" y="980" fill="#ffffff" font-size="21" font-weight="700">Jonas:</text>
+<text x="54" y="1009" fill="#ffffff" font-size="21">Ikke kylling i denne uge</text>
+<text x="362" y="1030" fill="#6d8299" font-size="14" text-anchor="end">17:08</text>
+<text x="310.0" y="1100" fill="#8b949e" font-size="20" text-anchor="middle">Søndag: køleskab og menu. Jonas' svar ses af begge.</text>
+<rect x="640" y="60" width="580" height="1004" rx="34" fill="#0e1621" stroke="#2b3a4a" stroke-width="2"/>
+<rect x="640" y="60" width="580" height="76" rx="34" fill="#17212b"/><rect x="640" y="100" width="580" height="36" fill="#17212b"/>
+<circle cx="690" cy="98" r="22" fill="#2ea6a6"/><text x="690" y="106" fill="#fff" font-size="22" font-weight="700" text-anchor="middle">H</text>
+<text x="726" y="94" fill="#fff" font-size="22" font-weight="600">Handle</text><text x="726" y="119" fill="#7d8e9e" font-size="17">bot · Annas telefon</text>
+<rect x="658" y="150" width="460" height="241" rx="16" fill="#182533"/>
+<text x="674" y="186" fill="#ffffff" font-size="21">Ændret: Ons kylling → kalkun i kokosmælk</text>
+<text x="674" y="215" fill="#ffffff" font-size="21">med ris.</text>
+<text x="674" y="244" fill="#ffffff" font-size="21" font-weight="700">UGE-4821, BilkaToGo: 1.118 kr</text>
+<text x="674" y="273" fill="#ffffff" font-size="21">inkl. levering og poser. 27 varer.</text>
+<text x="674" y="302" fill="#ffffff" font-size="21">nemlig ville være ca. 140 kr dyrere.</text>
+<text x="674" y="331" fill="#ffffff" font-size="21">Alt kød er øko.</text>
+<text x="674" y="360" fill="#ffffff" font-size="21">Skriv bestil, eller ret noget.</text>
+<text x="1106" y="381" fill="#6d8299" font-size="14" text-anchor="end">17:10</text>
+<rect x="1056" y="405" width="146" height="67" rx="16" fill="#2b5278"/>
+<text x="1072" y="441" fill="#ffffff" font-size="21">Bestil</text>
+<text x="1190" y="462" fill="#9cc1e6" font-size="14" text-anchor="end">17:11</text>
+<rect x="658" y="486" width="453" height="125" rx="16" fill="#182533"/>
+<text x="674" y="522" fill="#ffffff" font-size="21">Anna godkendte UGE-4821. Kurven hos</text>
+<text x="674" y="551" fill="#ffffff" font-size="21">Bilka er fyldt med 27 varer.</text>
+<text x="674" y="580" fill="#ffffff" font-size="21">Vælg leveringstid og betal i appen.</text>
+<text x="1099" y="601" fill="#6d8299" font-size="14" text-anchor="end">17:11</text>
+<rect x="658" y="625" width="460" height="212" rx="16" fill="#182533"/>
+<text x="674" y="661" fill="#ffffff" font-size="21" font-weight="700">Ugens menu (UGE-4821)</text>
+<text x="674" y="690" fill="#6ab3f3" font-size="21">Tir: Wok med svinemørbrad</text>
+<text x="674" y="719" fill="#6ab3f3" font-size="21">Ons: Kalkun i kokosmælk med ris</text>
+<text x="674" y="748" fill="#6ab3f3" font-size="21">Tor: Pasta med kødsovs</text>
+<text x="674" y="777" fill="#ffffff" font-size="21">…</text>
+<text x="674" y="806" fill="#ffffff" font-size="21">Tryk på en ret for at se opskriften.</text>
+<text x="1106" y="827" fill="#6d8299" font-size="14" text-anchor="end">17:11</text>
+<rect x="658" y="851" width="460" height="125" rx="16" fill="#182533"/>
+<text x="674" y="887" fill="#ffffff" font-size="21">Levering: natten til tirsdag (39 kr).</text>
+<text x="674" y="916" fill="#ffffff" font-size="21">Bestil senest mandag kl. 15. I vælger</text>
+<text x="674" y="945" fill="#ffffff" font-size="21">selv tiden og betaler i appen.</text>
+<text x="1106" y="966" fill="#6d8299" font-size="14" text-anchor="end">17:11</text>
+<text x="930.0" y="1100" fill="#8b949e" font-size="20" text-anchor="middle">Pris, "bestil", fyldt kurv og ugens menu.</text>
+</svg>

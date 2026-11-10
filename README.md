@@ -21,6 +21,10 @@
 
 I kan se hinandens svar, og I behøver ikke vente på hinanden.
 
+<img src="docs/telegram-eksempel.png" alt="Eksempel i Telegram: botten spørger om køleskabet, foreslår en menu, Jonas skriver 'ikke kylling', prisen kommer i BilkaToGo, Anna skriver bestil, kurven fyldes, og ugens menu og levering sendes" width="100%">
+
+<sub>Eksempel med opdigtede navne og priser. Teksterne er dem, botten sender.</sub>
+
 ## Det, der adskiller den
 
 - **Hele husstanden på Telegram.** Flere telefoner, svar ses af alle, gratis og uden AI-udgifter i botten.

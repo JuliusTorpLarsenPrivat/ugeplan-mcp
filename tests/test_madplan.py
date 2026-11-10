@@ -232,7 +232,7 @@ async def test_bestil_fylder_kurven(butik):
 
 
 async def test_prompten_har_ingen_felter():
-    """Fundet live: Claude Desktop viser en boks for hvert felt, også valgfrie. Maja skal svare på Telegram."""
+    """Fundet live: Claude Desktop viser en boks for hvert felt, også valgfrie. Husstanden skal svare på Telegram."""
     (prompt,) = await server.mcp.list_prompts()
     assert not prompt.arguments
 

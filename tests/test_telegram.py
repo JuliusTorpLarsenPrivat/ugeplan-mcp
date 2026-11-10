@@ -127,8 +127,8 @@ async def test_parring_og_fremmede_ignoreres(tg):
 @pytest.mark.parametrize("tekst", ["674 170", "674-170", "Koden er 674170"])
 async def test_parring_med_mellemrum(tg, tekst):
     kode = telegram.ny_parringskode()
-    tg.besked(5, tekst.replace("674170", kode).replace("674 170", f"{kode[:3]} {kode[3:]}").replace("674-170", f"{kode[:3]}-{kode[3:]}"), navn="Maja")
-    assert await telegram.hent_og_haandter(0) == ["Maja koblet på"]
+    tg.besked(5, tekst.replace("674170", kode).replace("674 170", f"{kode[:3]} {kode[3:]}").replace("674-170", f"{kode[:3]}-{kode[3:]}"), navn="Kim")
+    assert await telegram.hent_og_haandter(0) == ["Kim koblet på"]
 
 
 async def test_udloebet_parringskode_virker_ikke(tg):
@@ -326,10 +326,10 @@ async def test_oensker_gemmes_i_profilen_af_botten_selv(tg, tekst):
 
     par(tg, 1)
     await telegram.hent_og_haandter(0)
-    tg.besked(1, tekst, navn="Maja")
-    assert (await telegram.hent_og_haandter(0))[-1] == "besked fra Maja gemt (også i profilen)"
+    tg.besked(1, tekst, navn="Kim")
+    assert (await telegram.hent_og_haandter(0))[-1] == "besked fra Kim gemt (også i profilen)"
     (linje,) = profil.hent().fra_husstanden
-    assert linje.endswith(f"Maja: {tekst}")
+    assert linje.endswith(f"Kim: {tekst}")
     (b,) = await server.vis_beskeder()
     assert b["gemt_i_profilen"] is True and b["tekst"] == tekst
     assert (1, telegram.IKKE_LYTTER) in tg.sendt  # ingen snak om profilen (Claude var ikke i gang)
@@ -355,9 +355,9 @@ async def test_samme_oenske_gemmes_kun_en_gang_og_kan_ryddes(tg):
 
     par(tg, 1)
     await telegram.hent_og_haandter(0)
-    tg.besked(1, "husk mørk chokolade", navn="Maja")
+    tg.besked(1, "husk mørk chokolade", navn="Kim")
     await telegram.hent_og_haandter(0)
-    tg.besked(1, "husk mørk chokolade", navn="Maja")
+    tg.besked(1, "husk mørk chokolade", navn="Kim")
     await telegram.hent_og_haandter(0)
     assert len(profil.hent().fra_husstanden) == 1
     # Claude flytter ønsket til det rette felt og rydder op i samme kald
@@ -430,7 +430,7 @@ class ButikDerAfviserLaks(FalskButik):
     async def saet_antal(self, antal):
         self.kald.append(dict(antal))
         return [
-            AntalResultat(i, n, 0 if i == "laks" else n, i != "laks", "Du kan desværre ikke bestille dette produkt til HD Odense" if i == "laks" else None)
+            AntalResultat(i, n, 0 if i == "laks" else n, i != "laks", "Du kan desværre ikke bestille dette produkt til HD Testby" if i == "laks" else None)
             for i, n in antal.items()
         ]
 
@@ -449,7 +449,7 @@ async def test_vare_der_ikke_kom_i_kurven_giver_besked_om_erstatning(tg, monkeyp
     tg.besked(1, "bestil")
     await telegram.hent_og_haandter(0)
     sidste = next(t for _, t in reversed(tg.sendt) if "godkendte" in t)  # ugemenuen kommer efter
-    assert "HD Odense" in sidste and "betal i appen" not in sidste and "Vent med at betale" in sidste
+    assert "HD Testby" in sidste and "betal i appen" not in sidste and "Vent med at betale" in sidste
     assert (telegram.ERSTATNING_LYTTER in sidste) is claude_i_gang
     assert (telegram.ERSTATNING_IKKE_LYTTER in sidste) is not claude_i_gang
 

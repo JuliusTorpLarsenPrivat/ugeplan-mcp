@@ -83,7 +83,7 @@ async def test_serverinstruktionen_siger_telegram():
 async def test_beskeder_fra_mellem_madplanerne_kommer_med_foer_spoergsmaalet(tg):
     """Ellers blev en besked fra tirsdag blandet sammen med svaret om køleskabet."""
     kobl_paa(1)
-    telegram._gem_besked("Maja", "husk vi vil have mere fisk", husket=True)
+    telegram._gem_besked("Kim", "husk vi vil have mere fisk", husket=True)
     svar = await server.ugeplan_forloeb()
     (b,) = svar["beskeder_siden_sidst"]
     assert b["tekst"] == "husk vi vil have mere fisk" and b["gemt_i_profilen"] is True

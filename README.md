@@ -98,7 +98,7 @@ Login gemmes kun i styresystemets nøglering. Til sidst vælger du din AI-app, o
 
 **3. Skriv "lav madplan" til assistenten.** Første gang stiller den 4 korte runder spørgsmål om jeres husstand: hvor mange I er og budget, hvad I kan lide og ikke spiser, faste måltider og bestemte varer, og jeres favoritretter. Svarene gemmes i profilen, og bagefter kommer ugens plan.
 
-Profilen kan rumme alt fra "kød altid økologisk" til "chokolade mindst 85 %". Du ændrer den ved bare at sige det, fx *"husk, vi ikke kan lide fennikel"*, eller ved at skrive *"gennemgå vores profil"*.
+Profilen kan rumme alt fra "kød altid økologisk" til "chokolade mindst 85 %". Du ændrer den ved bare at sige det, fx *"husk, vi ikke kan lide fennikel"*, eller ved at skrive *"gennemgå vores profil"*. [docs/PROFIL.md](docs/PROFIL.md) forklarer felterne, giver gode råd og viser et eksempel på en profil.
 
 Guiden kan køres igen når som helst. `ugeplan-mcp status` viser, hvad der er sat op.
 

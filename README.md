@@ -48,6 +48,26 @@ Det eneste krav er en AI-app, der kan bruge MCP-servere (se *Virker med* nedenfo
 
 Værktøjerne kan også bruges hver for sig uden ugeplanen, fx *"hvad koster den her indkøbsliste i nemlig og Bilka?"* eller *"find en lasagneopskrift og læg varerne i kurven"*.
 
+### Hvad kræver hvad (udstyr)
+
+Intet kører i skyen. Alt kører på din egen maskine, og Telegram-botten svarer kun, mens AI-appen er åben.
+
+| Dit udstyr | Det virker |
+|---|---|
+| En computer med AI-appen åben, når I laver madplan | Madplan, priser, kurv, opskrifter og profil. |
+| + Telegram | Husstanden svarer fra telefonen, mens planen laves. Beskeder imellem bliver hentet, når appen er åben igen, hvis de er under et døgn gamle (Telegrams grænse). |
+| + en maskine, der altid er tændt med appen åben (fx en Mac mini) | Botten svarer altid, og beholdningen kan opdateres fra telefonen hver dag. Intet går tabt. |
+
+### Beholdningen fra telefonen
+
+Skriv til botten, når noget kommer i huset, også midt i ugen. Botten opdaterer selv beholdningen og svarer med det samme, uden AI:
+
+- *"skudt et rådyr, ligger i fryseren"*, *"har 2 kg kartofler"*, *"tilføj mælk og 10 æg"*
+- *"fortryd"*, hvis den forstod det forkert
+- *"fjern mælk"* kan bruges, men er aldrig nødvendigt. I siger, hvad der er, og AI'en regner selv ud, hvad planen har brugt. Det, den går ud fra, at I har, står under *"Tjek, at I har"* i menubeskeden.
+
+Mens en madplan er i gang, går beskederne til AI'en i stedet.
+
 ## Kom i gang
 
 Du skal bruge en AI-app med MCP (se *Virker med*), [uv](https://docs.astral.sh/uv/getting-started/installation/) og [Git](https://git-scm.com/downloads). Testet på Windows. Mac og Linux burde virke.
@@ -118,7 +138,7 @@ Forløbet er en lang samtale med mange værktøjskald. Jo bedre modellen er til 
 - Ikke tilknyttet nemlig.com, Salling Group eller Anthropic.
 - Kun hjemlevering, ikke afhentning.
 - BilkaToGo kræver login. nemlig kan søges uden, men kurven kræver login.
-- Telegram-botten tager imod svar af sig selv, men planen bliver kun lavet videre, mens AI-appen kører og arbejder. Til en maskine, der altid er tændt, se *Over netværket* nedenfor.
+- Telegram-botten kører, så længe AI-appen er åben, og planen bliver kun lavet videre, mens AI'en arbejder. Se *Hvad kræver hvad* ovenfor.
 
 ## Over netværket (HTTP)
 

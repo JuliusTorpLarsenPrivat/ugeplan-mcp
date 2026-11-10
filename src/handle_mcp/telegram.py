@@ -305,7 +305,7 @@ async def _svar(chat_id: str, tekst: str) -> None:
 
 async def _videresend(fra_chat: str, navn: str, tekst: str) -> None:
     """Vis svaret på de andre telefoner, fx "Julius: ingen fisk". Hver person har sin egen chat
-    med botten, så uden dette ser I ikke hinandens svar (Julius' ønske, efter Maja kom på)."""
+    med botten, så uden dette ser I ikke hinandens svar (ønske fra brug, da telefon nr. 2 kom på)."""
     for anden in chats():
         if anden != fra_chat:
             await _svar(anden, f"{navn}: {tekst}")
@@ -325,7 +325,7 @@ def _rettelse_efter(oprettet: str) -> bool:
 
 def ikke_fyldt_tekst(fejl: str) -> str:
     """Til husstanden: hvorfor kurven ikke blev fyldt, uden værktøjets instrukser til Claude
-    (fundet i uge 46: "kald igen med kurven_maa_have_andet=True" stod på Majas telefon)."""
+    (fundet i uge 46: "kald igen med kurven_maa_have_andet=True" stod på en telefon i husstanden)."""
     grund = re.split(r"\s+(?:Spørg brugeren|Kald igen|kald igen)", fejl, maxsplit=1)[0].strip()
     videre = "Claude spørger jer om det her." if claude_lytter() else "Skriv fortsæt i Claude-chatten, så klarer Claude det."
     return f"Kurven blev IKKE fyldt: {grund}\n{videre}"

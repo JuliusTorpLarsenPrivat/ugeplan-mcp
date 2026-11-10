@@ -27,7 +27,7 @@ def mappe() -> Path:
     if lokal := os.environ.get("LOCALAPPDATA"):
         # Claude Desktop er en Windows Store-app: dens processer (serveren, Cowork) får deres
         # skrivninger til AppData flyttet til Packages\Claude_…\LocalCache. En lytter startet i en
-        # almindelig terminal så en anden mappe, så Maja blev koblet på et sted, Cowork ikke kunne
+        # almindelig terminal så en anden mappe, så den anden telefon blev koblet på et sted, Cowork ikke kunne
         # se (fundet 7/11). Peg direkte på Claudes mappe, så alle processer ser de samme filer.
         claude = sorted(Path(lokal, "Packages").glob("Claude_*/LocalCache/Local/handle-mcp"))
         if claude:

@@ -31,7 +31,7 @@ class Profil:
 
 
 # Ord, der betyder "gem det til fremover". Bevidst bred: hellere et ønske for meget i profilen
-# (Claude rydder op) end at Maja skal sige det igen. Fundet i brug, uge 47.
+# (Claude rydder op) end at husstanden skal sige det igen. Fundet i brug, uge 47.
 HUSKEORD = re.compile(
     r"\b(husk\w*|gem|profil\w*|indstilling\w*|fremover|fremadrettet|i fremtiden|for fremtiden|eftertiden|"
     r"fra nu af|altid|aldrig|næste gang|hver gang|en anden gang|generelt|permanent|"

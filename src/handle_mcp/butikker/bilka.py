@@ -12,7 +12,7 @@ Fælde: Send aldrig en 'cart'-cookie med ved login. Så erstatter Bilka kontoens
 
 Fundet i brug (uge 48):
 - Nogle varer findes i butikkens sortiment, men kan ikke leveres til adressen ("Du kan desværre
-  ikke bestille dette produkt til HD Odense"), fx fersk laks. Varen og adressen har hver en
+  ikke bestille dette produkt til HD <by>"), fx fersk laks. Varen og adressen har hver en
   `blockbit`, og har de en bit til fælles, kan varen ikke bestilles. Sådanne varer vises ikke.
 - En fjernet vare kom tilbage i kurven, da der senere blev lagt andet i (lytteren og serveren er
   to processer med hver sin session). Fjernede varer huskes derfor i bilka-fjernet.json og

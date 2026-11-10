@@ -106,6 +106,7 @@ TRIN 2: MENUEN (uden priser, men med et prisskøn)
    Tag 1-2 af vores FAVORITTER med (se nedenfor), og marker dem med ★ i menuen.
    Brug vores egne varer (fx vildt fra fryseren) præcis som vi sagde: siger vi "rådyr
    lørdag", så kun lørdag, også selvom der er mere (fundet i en test: rådyr kom også tirsdag).
+   Skabsvarer med `status` "tjek: …" må du ikke bygge en ret på, før vi har svaret "har".
    Tager du noget fra den gemte fryser- eller skabsbeholdning, som vi IKKE har nævnt i denne
    omgang, så skriv kort efter retten, fx "(rådyr fra egen fryser)". Intet mere: ingen
    forklaring. Siger vi, at den er brugt, så fjern den med opdater_beholdning.
@@ -200,7 +201,12 @@ handles, og ikke mangler noget midt i madlavningen:
   KUN varenavne, ingen begrundelser i parentes (ellers bliver listen lang og uoverskuelig).
   Spørger de, hvad noget skal bruges til, så svar dem.
 Sådan fordeles de (brug koebsmoenster → basisvarer_pr_type og svaret om køleskabet):
-- Nævnt i svaret om køleskabet, eller i beholdningen → ingen af listerne (vi har det).
+- Nævnt i svaret om køleskabet, eller i beholdningen uden `status` → ingen af listerne (vi har
+  det). Har beholdningsvaren `status` "tjek: …", er den noteret før sidste indkøb og kan være
+  brugt (fundet i uge 46: "kartofler 500 g" stod der stadig ugen efter). Så står den under
+  Tjek, med den mængde ugen skal bruge, og regnes aldrig med.
+- Svarer vi "har X" på Tjek-listen, så gem X i beholdningen (sted "skab" eller "køleskab")
+  med opdater_beholdning, så status nulstilles. "Køb Y" gemmes ikke.
 - Kølevare (sted "køl": æg, smør, mælk, fløde, citron …) → Køber, medmindre den er "købt for
   nylig". Så står den under Tjek. Vi regner ALDRIG med kølevarer, vi ikke har nævnt.
 - Skabsvare (sted "skab": mel, olie, salt, ris …) → Tjek, medmindre den er "snart tom". Så

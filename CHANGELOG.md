@@ -1,5 +1,9 @@
 # Ændringer
 
+## Næste version
+
+- Rettet: skabsvarer i beholdningen (fx kartofler, hvidløg, krydderier) blev regnet med uge efter uge, også når en ret havde brugt dem. Varer noteret før sidste fyldte kurv står nu under "Tjek, at I har", og "har X" gemmes, så de tæller igen.
+
 ## 0.30.0 (10/11-2026)
 
 - Rettet: BilkaToGo viste ikke, at en vare var frost. Nu står der "400 g / frost" som hos nemlig, og forløbet forbyder frost, når profilen siger "kun fersk".

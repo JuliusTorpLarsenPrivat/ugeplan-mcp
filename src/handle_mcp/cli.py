@@ -65,8 +65,9 @@ async def _telegram_opsaet(fra_udklipsholder: bool = False) -> int:
     return 0
 
 
-async def _telegram_lyt(timer: float) -> int:
-    """Lyt efter beskeder i `timer` timer. Stop med Ctrl+C."""
+async def _telegram_lyt(timer: float, foraelder: int | None = None) -> int:
+    """Lyt efter beskeder i `timer` timer, eller så længe processen `foraelder` (serveren) kører.
+    Stop med Ctrl+C."""
     import time
 
     from handle_mcp import telegram
@@ -82,7 +83,8 @@ async def _telegram_lyt(timer: float) -> int:
         print(fejl)
         return 1
     start = datetime.now(telegram.TIDSZONE).isoformat(timespec="minutes")
-    print(f"{time.strftime('%d-%m %H:%M')} Lytter efter beskeder til {navn} i højst {timer:g} timer. Stop med Ctrl+C.", flush=True)
+    hvor_laenge = f"så længe AI-appen kører (proces {foraelder})" if foraelder else f"i højst {timer:g} timer"
+    print(f"{time.strftime('%d-%m %H:%M')} Lytter efter beskeder til {navn} {hvor_laenge}. Stop med Ctrl+C.", flush=True)
     print(f"Tilkoblede: {', '.join(telegram.chats().values()) or 'ingen endnu'}", flush=True)
     from handle_mcp import genindlaes
 
@@ -90,7 +92,10 @@ async def _telegram_lyt(timer: float) -> int:
     slut = time.monotonic() + timer * 3600
     fejl_i_traek = 0
     afsluttet = False
-    while time.monotonic() < slut:
+    while time.monotonic() < slut or foraelder:
+        if foraelder and not telegram.proces_lever(foraelder):
+            print(f"{time.strftime('%H:%M')} AI-appen er lukket. Lytteren stopper.", flush=True)
+            return 0
         try:  # ny kode uden at genstarte lytteren (som serveren, se genindlaes.py)
             if nye := genindlaes.tjek():
                 print(f"{time.strftime('%H:%M')} Ny kode indlæst: {len(nye)} moduler", flush=True)
@@ -296,6 +301,8 @@ def kommando(args: list[str]) -> int:
 
             print(f"{telegram.frakobl_alle()} telefoner er koblet fra. Kør telegram-par for at koble på igen.")
             return 0
+        case ["telegram", "--foraelder", pid] if pid.isdigit():
+            return asyncio.run(_telegram_lyt(24.0, foraelder=int(pid)))
         case ["telegram", *rest] if len(rest) <= 1:
             try:
                 timer = float(rest[0]) if rest else 24.0

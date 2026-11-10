@@ -1,5 +1,12 @@
 # Ændringer
 
+## 0.33.0 (10/11-2026)
+
+- **Beholdningen fra telefonen:** "skudt et rådyr, ligger i fryseren", "har 2 kg kartofler" og "fortryd" klares af botten selv, med svar med det samme. Mens en madplan er i gang, går beskederne til AI'en som før.
+- **Lytteren følger AI-appen:** den starter, når serveren starter, og kører, så længe appen er åben. Den stopper ikke længere efter 24 timer. På en maskine, der altid er tændt, svarer botten altid.
+- README: nyt afsnit, *Hvad kræver hvad*, om hvad hvert niveau af udstyr giver.
+- Rettet: lytteren kunne ikke starte hos en helt ny bruger, fordi datamappen ikke fandtes endnu.
+
 ## 0.32.0 (10/11-2026)
 
 - **Åben for alle AI-apps med MCP.** Guiden spørger, hvilken app du bruger (Claude Desktop, Claude Code, Cursor, VS Code eller en anden), og viser præcis, hvad der skal sættes ind. README'en har en tabel over, hvad der virker.

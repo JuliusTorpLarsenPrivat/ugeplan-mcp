@@ -498,7 +498,18 @@ def main() -> None:
         from handle_mcp.cli import kommando
 
         sys.exit(kommando(sys.argv[1:]))
+    start_lyttervagt()
     mcp.run("stdio")
+
+
+def start_lyttervagt() -> None:
+    """Telegram-lytteren følger serveren: den kører, så længe AI-appen har serveren åben."""
+    import os
+    import threading
+
+    if os.environ.get("UGEPLAN_LYTTERVAGT") == "0":  # testene starter serveren uden lytter
+        return
+    threading.Thread(target=lambda: telegram.hold_lytteren_i_gang(os.getpid()), name="lyttervagt", daemon=True).start()
 
 
 if __name__ == "__main__":

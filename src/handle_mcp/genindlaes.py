@@ -38,6 +38,7 @@ RAEKKEFOLGE = (
     "handle_mcp.fordeling",
     "handle_mcp.historik",
     "handle_mcp.beholdning",
+    "handle_mcp.beholdning_besked",
     "handle_mcp.samling",
     "handle_mcp.profil",
     "handle_mcp.madplan",

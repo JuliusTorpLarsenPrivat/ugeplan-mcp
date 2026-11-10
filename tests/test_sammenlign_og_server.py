@@ -214,7 +214,10 @@ async def test_serveren_starter_og_viser_vaerktoejer():
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
 
-    p = StdioServerParameters(command=sys.executable, args=["-m", "handle_mcp.server"])
+    from mcp.client.stdio import get_default_environment
+
+    # Ingen rigtig Telegram-lytter fra en test (serveren får ikke testens datamappe med)
+    p = StdioServerParameters(command=sys.executable, args=["-m", "handle_mcp.server"], env={**get_default_environment(), "UGEPLAN_LYTTERVAGT": "0"})
     async with stdio_client(p) as (r, w), ClientSession(r, w) as s:
         await s.initialize()
         navne = {t.name for t in (await s.list_tools()).tools}

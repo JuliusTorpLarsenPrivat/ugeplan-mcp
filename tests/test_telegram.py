@@ -144,10 +144,10 @@ async def test_udloebet_parringskode_virker_ikke(tg):
 async def test_samme_besked_haandteres_kun_en_gang(tg):
     par(tg, 1)
     await telegram.hent_og_haandter(0)
-    tg.besked(1, "Vi har 2 løg")
+    tg.besked(1, "Tak for maden")
     await telegram.hent_og_haandter(0)
     await telegram.hent_og_haandter(0)  # Telegram ville sende den igen uden offset
-    assert [b["tekst"] for b in telegram.beskeder(kun_nye=False)] == ["Vi har 2 løg"]
+    assert [b["tekst"] for b in telegram.beskeder(kun_nye=False)] == ["Tak for maden"]
 
 
 # --- beskeder og send ------------------------------------------------------------
@@ -387,6 +387,7 @@ async def test_fejl_i_profilen_taber_ikke_beskeden(tg, monkeypatch):
 async def test_svar_mens_claude_ikke_lytter_faar_besked_om_det(tg):
     par(tg, 1)
     await telegram.hent_og_haandter(0)
+    telegram._gem_besked(telegram.SENDT_AF, telegram.SPOERGSMAAL_START + " Hvad har I i køleskabet?", laest=True)
     tg.besked(1, "vi har agurk og mel")
     await telegram.hent_og_haandter(0)
     assert tg.sendt[-1] == (1, telegram.IKKE_LYTTER) and "fortsæt" in telegram.IKKE_LYTTER
@@ -407,6 +408,7 @@ async def test_claude_der_er_gaaet_i_staa_regnes_ikke_som_lyttende(tg):
     par(tg, 1)
     await telegram.hent_og_haandter(0)
     skriv("claude-aktiv", {"sidst": time.time() - telegram.CLAUDE_LYTTER_SEK - 1})
+    telegram._gem_besked(telegram.SENDT_AF, telegram.SPOERGSMAAL_START + " Hvad har I i køleskabet?", laest=True)
     tg.besked(1, "vi har agurk og mel")
     await telegram.hent_og_haandter(0)
     assert tg.sendt[-1] == (1, telegram.IKKE_LYTTER)
@@ -586,3 +588,50 @@ async def test_menu_videresendes_ikke(tg, monkeypatch):
     tg.besked(1, "menu", navn="Julius")
     await telegram.hent_og_haandter(0)
     assert not any(t.startswith("Julius:") for _, t in tg.sendt)
+
+
+# --- beholdningen fra Telegram og lytteren, der følger appen ---------------------------------
+
+
+async def test_beholdning_fra_telegram_uden_ai(tg):
+    from handle_mcp import beholdning
+
+    par(tg, 1, 2)
+    await telegram.hent_og_haandter(0)
+    tg.besked(1, "skudt et rådyr, ligger i fryseren")
+    assert (await telegram.hent_og_haandter(0))[-1] == "beholdning ændret af Maria"
+    assert [v.navn for v in beholdning.hent()] == ["rådyr"]
+    svar = [t for c, t in tg.sendt if "Lagt i beholdningen" in t]
+    assert len(svar) == 2  # begge telefoner får svaret
+    assert telegram.antal_ulaeste() == 0  # AI'en skal ikke behandle den igen
+
+
+async def test_beholdning_roeres_ikke_mens_planen_venter_paa_svar(tg):
+    from handle_mcp import beholdning
+
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    telegram._gem_besked(telegram.SENDT_AF, telegram.SPOERGSMAAL_START + " Hvad har I i køleskabet?", laest=True)
+    tg.besked(1, "har 2 kg kartofler")
+    await telegram.hent_og_haandter(0)
+    assert beholdning.hent() == [] and telegram.antal_ulaeste() == 1  # svaret går til AI'en
+
+
+def test_lytteren_foelger_serveren(monkeypatch):
+    startet = []
+    monkeypatch.setattr(telegram, "AUTOSTART", True)
+    monkeypatch.setattr(telegram, "lytter_koerer", lambda: False)
+    monkeypatch.setattr("subprocess.Popen", lambda kommando, **kw: startet.append(kommando))
+    monkeypatch.setattr(telegram, "har_bot", lambda: True)
+    telegram.hold_lytteren_i_gang(4242, interval=0, gange=1)
+    assert startet[0][-3:] == ["telegram", "--foraelder", "4242"]
+    monkeypatch.setattr(telegram, "har_bot", lambda: False)
+    telegram.hold_lytteren_i_gang(4242, interval=0, gange=1)
+    assert len(startet) == 1  # ingen bot sat op: ingen lytter
+
+
+def test_proces_lever():
+    import os
+
+    assert telegram.proces_lever(os.getpid())
+    assert not telegram.proces_lever(2**22 + 12345)

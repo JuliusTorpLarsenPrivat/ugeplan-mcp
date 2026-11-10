@@ -48,6 +48,26 @@ Det eneste krav er en AI-app, der kan bruge MCP-servere (se *Virker med* nedenfo
 
 Værktøjerne kan også bruges hver for sig uden ugeplanen, fx *"hvad koster den her indkøbsliste i nemlig og Bilka?"* eller *"find en lasagneopskrift og læg varerne i kurven"*.
 
+### Hvad kræver hvad (udstyr)
+
+Intet kører i skyen. Alt kører på din egen maskine, og Telegram-botten svarer kun, mens AI-appen er åben.
+
+| Dit udstyr | Det virker |
+|---|---|
+| En computer med AI-appen åben, når I laver madplan | Madplan, priser, kurv, opskrifter og profil. |
+| + Telegram | Husstanden svarer fra telefonen, mens planen laves. Beskeder imellem bliver hentet, når appen er åben igen, hvis de er under et døgn gamle (Telegrams grænse). |
+| + en maskine, der altid er tændt med appen åben (fx en Mac mini) | Botten svarer altid, og beholdningen kan opdateres fra telefonen hver dag. Intet går tabt. |
+
+### Beholdningen fra telefonen
+
+Skriv til botten, når noget kommer i huset, også midt i ugen. Botten opdaterer selv beholdningen og svarer med det samme, uden AI:
+
+- *"skudt et rådyr, ligger i fryseren"*, *"har 2 kg kartofler"*, *"tilføj mælk og 10 æg"*
+- *"fortryd"*, hvis den forstod det forkert
+- *"fjern mælk"* kan bruges, men er aldrig nødvendigt. I siger, hvad der er, og AI'en regner selv ud, hvad planen har brugt. Det, den går ud fra, at I har, står under *"Tjek, at I har"* i menubeskeden.
+
+Mens en madplan er i gang, går beskederne til AI'en i stedet.
+
 ## Kom i gang
 
 Du skal bruge en AI-app med MCP (se *Virker med*), [uv](https://docs.astral.sh/uv/getting-started/installation/) og [Git](https://git-scm.com/downloads). Testet på Windows. Mac og Linux burde virke.
@@ -55,7 +75,7 @@ Du skal bruge en AI-app med MCP (se *Virker med*), [uv](https://docs.astral.sh/u
 **1. Kør guiden** i en terminal. Den tager dig gennem butikker, Telegram og din AI-app, ét trin ad gangen, og alt kan springes over:
 
 ```powershell
-uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.32.0 ugeplan-mcp opsaet
+uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.33.0 ugeplan-mcp opsaet
 ```
 
 Login gemmes kun i styresystemets nøglering. Til sidst vælger du din AI-app, og guiden viser præcis, hvad du skal sætte ind og hvor.
@@ -110,7 +130,7 @@ Forløbet er en lang samtale med mange værktøjskald. Jo bedre modellen er til 
 - Alle kald går gennem `vagt.py`, som kun tillader butikkernes egne adresser og afviser alt, der ligner bestilling, betaling eller valg af levering.
 - Navn, adresse, telefon og e-mail fjernes fra svarene, før AI'en ser dem.
 - Det, AI'en ser, sendes til den AI-udbyder, din app bruger (fx Anthropic, OpenAI eller GitHub), som en del af samtalen.
-- Lås installationen til en version (`@v0.32.0`), så koden ikke ændrer sig uden din viden.
+- Lås installationen til en version (`@v0.33.0`), så koden ikke ændrer sig uden din viden.
 
 ## Begrænsninger
 
@@ -118,7 +138,7 @@ Forløbet er en lang samtale med mange værktøjskald. Jo bedre modellen er til 
 - Ikke tilknyttet nemlig.com, Salling Group eller Anthropic.
 - Kun hjemlevering, ikke afhentning.
 - BilkaToGo kræver login. nemlig kan søges uden, men kurven kræver login.
-- Telegram-botten tager imod svar af sig selv, men planen bliver kun lavet videre, mens AI-appen kører og arbejder. Til en maskine, der altid er tændt, se *Over netværket* nedenfor.
+- Telegram-botten kører, så længe AI-appen er åben, og planen bliver kun lavet videre, mens AI'en arbejder. Se *Hvad kræver hvad* ovenfor.
 
 ## Over netværket (HTTP)
 

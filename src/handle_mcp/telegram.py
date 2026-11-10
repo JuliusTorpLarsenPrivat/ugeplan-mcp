@@ -28,7 +28,7 @@ import httpx
 import keyring
 import keyring.errors
 
-from handle_mcp import lokal, madplan, profil
+from handle_mcp import beholdning_besked, lokal, madplan, profil
 from handle_mcp.lokal import laes, skriv
 from handle_mcp.login import TJENESTE
 from handle_mcp.vagt import VagtFejl, ny_klient, send
@@ -242,17 +242,20 @@ def lytter_koerer() -> bool:
     return True
 
 
-def start_lytter_i_baggrunden(timer: float = 24) -> bool:
+def start_lytter_i_baggrunden(timer: float = 24, foraelder: int | None = None) -> bool:
     """Start lytteren som et selvstændigt program uden vindue, hvis den ikke kører.
-    Den skriver til telegram-lytter.log og stopper selv, når ugen er afsluttet."""
+    Den skriver til telegram-lytter.log. Med `foraelder` (serverens proces-id) lytter den, så
+    længe serveren, og dermed AI-appen, kører; ellers i `timer` timer."""
     if not AUTOSTART or lytter_koerer():
         return False
     import subprocess
 
     from handle_mcp.lokal import mappe
 
+    mappe().mkdir(parents=True, exist_ok=True)  # ny bruger: mappen findes ikke endnu
     log_fil = open(mappe() / "telegram-lytter.log", "a", encoding="utf-8")  # noqa: SIM115
-    kommando = [sys.executable, "-m", "handle_mcp.server", "telegram", f"{timer:g}"]
+    kommando = [sys.executable, "-m", "handle_mcp.server", "telegram"]
+    kommando += ["--foraelder", str(foraelder)] if foraelder else [f"{timer:g}"]
     flag = 0
     if sys.platform == "win32":
         # Selvstændig proces uden vindue. "Breakaway" lader den leve videre, hvis Claude Desktop lukkes.
@@ -264,6 +267,58 @@ def start_lytter_i_baggrunden(timer: float = 24) -> bool:
         subprocess.Popen(kommando, stdout=log_fil, stderr=log_fil, stdin=subprocess.DEVNULL, creationflags=flag & ~0x01000000, env=env, close_fds=True)
     log.warning("Telegram-lytteren er startet i baggrunden.")
     return True
+
+
+def proces_lever(pid: int) -> bool:
+    """Kører processen stadig? Uden at sende den noget (os.kill(pid, 0) er Ctrl+C på Windows)."""
+    if sys.platform == "win32":
+        import ctypes
+
+        k = ctypes.windll.kernel32
+        h = k.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE
+        if not h:
+            return False
+        try:
+            return k.WaitForSingleObject(h, 0) == 0x102  # WAIT_TIMEOUT: kører stadig
+        finally:
+            k.CloseHandle(h)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def har_bot() -> bool:
+    """Er Telegram sat op med mindst én telefon? Ellers er der intet at lytte efter."""
+    try:
+        hent_token()
+    except TelegramFejl:
+        return False
+    return bool(chats())
+
+
+VAGT_INTERVAL_SEK = 300
+
+
+def hold_lytteren_i_gang(foraelder: int, interval: float = VAGT_INTERVAL_SEK, gange: int | None = None) -> None:
+    """Kører i en tråd i serveren: starter lytteren, hvis den ikke kører, og tjekker igen hvert
+    5. minut. Så svarer botten, så længe AI-appen er åben (på en Mac mini, der altid er tændt:
+    altid), uden en robot, der kører, når appen er lukket. Julius: "en regel der starter en lytter"."""
+    import time
+
+    n = 0
+    while gange is None or n < gange:
+        n += 1
+        try:
+            if har_bot():
+                start_lytter_i_baggrunden(foraelder=foraelder)
+        except Exception as fejl:  # noqa: BLE001  vagten må aldrig vælte serveren
+            log.warning("Lytteren kunne ikke startes: %s", fejl)
+        if gange is None or n < gange:
+            time.sleep(interval)
 
 
 def ugen_er_afsluttet(siden: str) -> bool:
@@ -397,6 +452,31 @@ def claude_lytter() -> bool:
     return siden is not None and siden < CLAUDE_LYTTER_SEK
 
 
+def plan_i_gang() -> bool:
+    """Arbejder AI'en lige nu, eller venter en plan på "bestil"? Så går beskeder til AI'en."""
+    try:
+        return claude_lytter() or madplan.eneste_ventende() is not None or _spoergsmaal_uden_plan()
+    except Exception:  # noqa: BLE001  i tvivl: lad AI'en tage beskeden
+        return True
+
+
+SPOERGSMAAL_START = "Hej! Ny madplan på vej."
+SPOERGSMAAL_GYLDIG_SEK = 3 * 86400
+
+
+def _spoergsmaal_uden_plan() -> bool:
+    """Er søndagsspørgsmålet sendt, uden at der er lavet en plan siden? Så er "vi har agurk og
+    mel" et svar på det, også hvis AI'en er gået i stå, og skal ikke ændre beholdningen her."""
+    sendt = [b["tid"] for b in laes("beskeder").get("beskeder", []) if b.get("fra") == SENDT_AF and str(b.get("tekst", "")).startswith(SPOERGSMAAL_START)]
+    if not sendt:
+        return False
+    sidst = datetime.fromisoformat(max(sendt))
+    if (datetime.now(TIDSZONE) - sidst).total_seconds() > SPOERGSMAAL_GYLDIG_SEK:
+        return False
+    planer = madplan._alle()
+    return not planer or datetime.fromisoformat(planer[-1].oprettet) < sidst
+
+
 def kvittering() -> str:
     """Kort "Modtaget." når Claude er i gang. Ellers siges det, så ingen venter forgæves på et svar."""
     return "Modtaget." if claude_lytter() else IKKE_LYTTER
@@ -426,6 +506,16 @@ async def haandter(opdatering: dict) -> str | None:
             return f"ugemenu sendt til {navn}"
         await _svar(chat_id, "Der er ingen madplan i kurven lige nu.")
         return f"ingen ugemenu til {navn}"
+    if not plan_i_gang() and (handling := beholdning_besked.fortolk(tekst)):
+        # Uden AI'en: "har 2 kg kartofler", "skudt et rådyr, ligger i fryseren", "fortryd".
+        # Mens en plan er i gang, er "vi har …" et svar til AI'en og bliver ikke rørt her.
+        svar = beholdning_besked.udfoer(handling)
+        _gem_besked(navn, tekst, laest=True)
+        _gem_besked("handle-botten", svar, laest=True)
+        await _videresend(chat_id, navn, tekst)
+        for modtager in chats():
+            await _svar(modtager, svar)
+        return f"beholdning ændret af {navn}"
     husket = False
     if profil.er_huskeoenske(tekst):
         # Gemmes i profilen her, uden Claude: så er ønsket med i alle kommende madplaner, også

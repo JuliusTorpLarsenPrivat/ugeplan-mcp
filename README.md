@@ -57,8 +57,8 @@ Intet kører i skyen. Alt kører på din egen maskine, og Telegram-botten svarer
 | En computer med AI-appen åben, når I laver madplan | Madplan, priser, kurv, opskrifter og profil. |
 | + Telegram | Husstanden svarer fra telefonen, mens planen laves. Beskeder imellem bliver hentet, når appen er åben igen, hvis de er under et døgn gamle (Telegrams grænse). |
 | + en maskine, der altid er tændt med appen åben (fx en Mac mini) | Botten svarer altid, og beholdningen kan opdateres fra telefonen hver dag. Intet går tabt. |
-| + Garmin-ur og en Garmin-MCP-server (min egen, garmin-mcp, er ikke offentlig endnu) | Menuen lægges efter jeres træningsmønster. |
-| + garmin-mcp med login på maskinen, der altid er tændt | **Agil plan efter træning:** botten foreslår at bytte retter, når en dag bliver hårdere eller roligere end planlagt. Se nedenfor. |
+| + Garmin-ur og Garmin-delen (`[garmin]`, se [docs/GARMIN.md](docs/GARMIN.md)) | Menuen lægges efter jeres træningsmønster, og AI'en kan se søvn, træning og skridt. |
+| + Garmin-login på maskinen, der altid er tændt | **Agil plan efter træning:** botten foreslår at bytte retter, når en dag bliver hårdere eller roligere end planlagt. Se nedenfor. |
 
 ### Agil plan efter træning
 
@@ -70,7 +70,7 @@ Med Garmin-data (kun for dem, der har sagt ja i profilen) følger planen den tr�
 - Fersk fisk flyttes aldrig, og noget, der skal tøs op, flyttes aldrig til i dag. Der kommer højst ét forslag om dagen, og kl. 20 en påmindelse, hvis noget skal op af fryseren til i morgen.
 - I ser kun "hård dag" eller "rolig dag", aldrig tal fra uret.
 
-Opsætning: log ind i garmin-mcp for hver person, kør `ugeplan-mcp garmin-opsaet <mappe med garmin-mcp>`, og sig til AI'en, hvem der må bruges, fx *"Julius må bruge sine Garmin-data"*. Uden Garmin opfører planen sig som altid.
+Opsætning: svar ja til Garmin i `ugeplan-mcp opsaet`, log ind én gang pr. person med `garmin-mcp login --person <navn>`, og sig til AI'en, hvem der må bruges, fx *"Anna må bruge sine Garmin-data"*. Detaljer og værktøjer: [docs/GARMIN.md](docs/GARMIN.md). Uden Garmin opfører planen sig som altid.
 
 ### Beholdningen fra telefonen
 

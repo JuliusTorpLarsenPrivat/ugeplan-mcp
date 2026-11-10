@@ -67,13 +67,44 @@ def _udvid(vaerdi: str) -> str:
     return os.path.expandvars(os.path.expanduser(vaerdi))
 
 
+def garmin_installeret() -> bool:
+    import importlib.util
+
+    return importlib.util.find_spec("garminconnect") is not None and importlib.util.find_spec("garmin_mcp") is not None
+
+
+def _fra_samme_pakke(dag: date, personer: list[dict]) -> dict[str, dict]:
+    if not garmin_installeret():
+        return {}
+    try:
+        from garmin_mcp import cli as garmin_cli
+
+        alle = garmin_cli.belastning(dag)["personer"]
+    except Exception as fejl:  # noqa: BLE001  fx intet login: lytteren skal blive ved
+        log.warning("Garmin-niveau kunne ikke hentes (%s)", type(fejl).__name__)
+        return {p["navn"]: {"niveau": "ukendt"} for p in personer}
+    return _til_profilnavne(alle, personer)
+
+
+def _til_profilnavne(alle: dict, personer: list[dict]) -> dict[str, dict]:
+    ud = {}
+    for p in personer:
+        d = alle.get(p.get("konto") or p["navn"]) or alle.get(p["navn"].lower()) or {}
+        if d.get("fejl") or not d:
+            log.warning("Garmin-niveau for %s mangler: %s", p["navn"], str(d.get("fejl") or "personen findes ikke i garmin-mcp")[:200])
+        ud[p["navn"]] = d if d.get("niveau") else {"niveau": "ukendt"}
+    return ud
+
+
 def hent_niveauer(dag: date) -> dict[str, dict]:
     """{profilnavn: {"niveau", "aktiviteter", ...}} for personerne med ja i profilen. Tom uden
     opsætning. En person med fejl får niveau "ukendt"."""
     personer = profil.hent().garmin
     k = konfiguration()
-    if not personer or not k:
+    if not personer:
         return {}
+    if not k:  # garmin-delen er installeret i samme pakke: hent direkte, uden ekstra kommando
+        return _fra_samme_pakke(dag, personer)
     miljoe = {**os.environ, **{n: _udvid(v) for n, v in (k.get("miljoe") or {}).items()}}
     svar = None
     try:
@@ -86,14 +117,7 @@ def hent_niveauer(dag: date) -> dict[str, dict]:
         sidst = (getattr(svar, "stderr", "") or "").strip().splitlines()[-1:] or [""]
         log.warning("Garmin-niveau kunne ikke hentes (%s): %s", type(fejl).__name__, sidst[0][:200])
         return {p["navn"]: {"niveau": "ukendt"} for p in personer}
-    alle = data.get("personer") or {}
-    ud = {}
-    for p in personer:
-        d = alle.get(p.get("konto") or p["navn"]) or alle.get(p["navn"].lower()) or {}
-        if d.get("fejl") or not d:
-            log.warning("Garmin-niveau for %s mangler: %s", p["navn"], str(d.get("fejl") or "personen findes ikke i garmin-mcp")[:200])
-        ud[p["navn"]] = d if d.get("niveau") else {"niveau": "ukendt"}
-    return ud
+    return _til_profilnavne(data.get("personer") or {}, personer)
 
 
 # --- selve vurderingen (ren funktion, testes uden Telegram og Garmin) -------------------------
@@ -250,7 +274,7 @@ async def koer(nu: datetime | None = None, hent=hent_niveauer) -> list[str]:
     from handle_mcp import telegram
 
     nu = nu or datetime.now(TIDSZONE)
-    if not (FRA_KL <= nu.hour < TIL_KL) or not profil.hent().garmin or not konfiguration():
+    if not (FRA_KL <= nu.hour < TIL_KL) or not profil.hent().garmin or not (konfiguration() or garmin_installeret()):
         return []
     tilstand = laes("traening")
     if _time.time() - float(tilstand.get("sidste_tjek") or 0) < TJEK_HVER_SEK:

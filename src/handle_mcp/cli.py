@@ -160,8 +160,10 @@ def _ja(spoergsmaal: str) -> bool:
         return False
 
 
-def server_kommando() -> tuple[str, list[str]]:
-    """Kommandoen, en AI-app skal starte serveren med (MCP over stdio). Den samme for alle apps."""
+def server_kommando(garmin: bool = False, program: str = "ugeplan-mcp") -> tuple[str, list[str]]:
+    """Kommandoen, en AI-app skal starte serveren med (MCP over stdio). Den samme for alle apps.
+    Med `garmin` installeres den valgfri Garmin-del ([garmin]) med, så lytteren kan hente
+    dagens niveau. `program` kan være "garmin-mcp" (Garmin-serveren)."""
     import shutil
     from importlib.metadata import PackageNotFoundError, version
 
@@ -170,13 +172,22 @@ def server_kommando() -> tuple[str, list[str]]:
     except PackageNotFoundError:
         v = None
     kilde = "git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp" + (f"@v{v}" if v else "")
-    return shutil.which("uvx") or "uvx", ["--from", kilde, "ugeplan-mcp"]
+    if garmin or program == "garmin-mcp":
+        kilde = f"ugeplan-mcp[garmin] @ {kilde}"
+    return shutil.which("uvx") or "uvx", ["--from", kilde, program]
 
 
-def claude_config() -> dict:
+def servere(garmin: bool = False) -> dict[str, tuple[str, list[str]]]:
+    """De servere, AI-appen skal starte: ugeplan, og Garmin-serveren, når den skal bruges."""
+    ud = {"ugeplan": server_kommando(garmin)}
+    if garmin:
+        ud["garmin"] = server_kommando(True, "garmin-mcp")
+    return ud
+
+
+def claude_config(garmin: bool = False) -> dict:
     """Det, der skal stå i Claude Desktops claude_desktop_config.json (samme form som Cursor m.fl.)."""
-    cmd, args = server_kommando()
-    return {"mcpServers": {"ugeplan": {"command": cmd, "args": args}}}
+    return {"mcpServers": {navn: {"command": cmd, "args": args} for navn, (cmd, args) in servere(garmin).items()}}
 
 
 # Serveren er almindelig MCP og er ikke bundet til én AI. Julius: "det skal være åbent".
@@ -190,14 +201,14 @@ KLIENTER = {
 }
 
 
-def klient_vejledning(valg: str) -> str:
-    """Hvordan serveren sættes ind i den valgte AI-app."""
+def klient_vejledning(valg: str, garmin: bool = False) -> str:
+    """Hvordan serveren (og evt. Garmin-serveren) sættes ind i den valgte AI-app."""
     import json
     import os
     import shlex
 
-    cmd, args = server_kommando()
-    standard = json.dumps(claude_config(), indent=2, ensure_ascii=False)
+    cmd, args = server_kommando(garmin)
+    standard = json.dumps(claude_config(garmin), indent=2, ensure_ascii=False)
     if valg == "1":
         sti = os.path.join(os.environ.get("APPDATA", "~"), "Claude", "claude_desktop_config.json")
         return (
@@ -206,12 +217,12 @@ def klient_vejledning(valg: str) -> str:
             "Genstart Claude Desktop helt (også ikonet i proceslinjen)."
         )
     if valg == "2":
-        linje = "claude mcp add --scope user ugeplan -- " + " ".join(shlex.quote(a) for a in [cmd, *args])
-        return f"Kør i en terminal:\n\n  {linje}\n\nStart så en ny Claude Code-session."
+        linjer = [f"claude mcp add --scope user {navn} -- " + " ".join(shlex.quote(a) for a in [c, *a_]) for navn, (c, a_) in servere(garmin).items()]
+        return "Kør i en terminal:\n\n  " + "\n  ".join(linjer) + "\n\nStart så en ny Claude Code-session."
     if valg == "3":
         return f"Læg dette i ~/.cursor/mcp.json (eller Cursor Settings > MCP > Add):\n\n{standard}\n\nGenstart Cursor."
     if valg == "4":
-        vs = json.dumps({"servers": {"ugeplan": {"type": "stdio", "command": cmd, "args": args}}}, indent=2, ensure_ascii=False)
+        vs = json.dumps({"servers": {n: {"type": "stdio", "command": c, "args": a_} for n, (c, a_) in servere(garmin).items()}}, indent=2, ensure_ascii=False)
         return (
             "I VS Code: Kommandopaletten > \"MCP: Open User Configuration\", og læg dette ind:\n\n"
             f"{vs}\n\nBrug Copilot Chat i Agent-tilstand."
@@ -247,6 +258,15 @@ def _opsaet() -> int:
     if _ja("  Skal I bruge Telegram?"):
         asyncio.run(_telegram_opsaet())
 
+    print("\nGARMIN (valgfrit)")
+    print("Med et Garmin-ur kan madplanen følge jeres træning og foreslå at bytte retter (kun læsning).")
+    garmin = _ja("  Har nogen af jer et Garmin-ur, som madplanen må bruge?")
+    if garmin:
+        _, gargs = server_kommando(True, "garmin-mcp")
+        print("  Log ind én gang for hver person (email, kode og evt. MFA-kode):")
+        print(f'    uvx --from "{gargs[1]}" garmin-mcp login --person <navn>')
+        print('  Sig bagefter til AI-assistenten, hvem der må bruges, fx "Anna må bruge sine Garmin-data".')
+
     print("\nTRIN 3/3: DIN AI-APP")
     print("ugeplan-mcp er en MCP-server og virker med de AI-apps, der kan bruge MCP. Hvilken bruger du?")
     for nr, navn in KLIENTER.items():
@@ -256,7 +276,7 @@ def _opsaet() -> int:
     except EOFError:
         print()
         valg = "5"
-    print("\n" + klient_vejledning(valg))
+    print("\n" + klient_vejledning(valg, garmin))
 
     print("\nKLAR. Skriv \"lav madplan\" til AI-assistenten. Første gang stiller den et par korte spørgsmål om")
     print("jeres husstand: antal, budget, hvad I kan lide og ikke spiser, faste måltider og")
@@ -315,7 +335,7 @@ def kommando(args: list[str]) -> int:
 
             traening.gem_konfiguration(mappe, venv[0] if venv else None)
             print(f"Lytteren henter nu dagens niveau fra garmin-mcp i {mappe}.")
-            print("Husk at sige ja i profilen, fx: \"Julius må bruge sine Garmin-data\" til AI-assistenten.")
+            print("Husk at sige ja i profilen, fx: \"Anna må bruge sine Garmin-data\" til AI-assistenten.")
             return 0
         case ["telegram", "--foraelder", pid] if pid.isdigit():
             return asyncio.run(_telegram_lyt(24.0, foraelder=int(pid)))

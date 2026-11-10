@@ -6,6 +6,7 @@ dist/
 # Login og hemmeligheder må aldrig i git
 .env
 *.secret
+garmin_tokens.json
 
 # resultater fra scripts/livetest_varevalg.py
 livetest_*.json

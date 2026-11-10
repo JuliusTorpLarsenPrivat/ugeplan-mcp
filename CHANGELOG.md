@@ -1,5 +1,11 @@
 # Ændringer
 
+## Næste version
+
+- **Garmin er nu en del af ugeplan-mcp.** Den valgfri Garmin-del installeres med `ugeplan-mcp[garmin]` og giver serveren `garmin-mcp` (søvn, hvilepuls, skridt, kalorier, træninger, vægt og dagens belastning, kun læsning). Se [docs/GARMIN.md](docs/GARMIN.md).
+- Telegram-lytteren henter dagens niveau direkte fra Garmin-delen, når den er installeret. `garmin-opsaet` behøves ikke længere, men virker stadig.
+- `ugeplan-mcp opsaet` spørger, om I vil bruge Garmin, og skriver begge servere ind i jeres AI-app.
+
 ## 0.36.0 (10/11-2026)
 
 - **Ugens budget gælder en normal uge** (beskrevet i profilens note). Færre dage hjemme, gæster og andre ændringer tilpasser budgettet, og AI'en skriver, hvordan den regnede.

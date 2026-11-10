@@ -140,3 +140,17 @@ def test_telegram_taler_ikke_om_claude():
 
     for t in (telegram.IKKE_LYTTER, telegram.IKKE_I_GANG_FORTSAET, telegram.ERSTATNING_LYTTER, telegram.ERSTATNING_IKKE_LYTTER, telegram.BESTIL_EFTER_RETTELSE):
         assert "Claude" not in t
+
+
+def test_guiden_med_garmin_lægger_begge_servere_ind(monkeypatch, capsys):
+    k = cli.claude_config(garmin=True)["mcpServers"]
+    assert set(k) == {"ugeplan", "garmin"}
+    assert k["ugeplan"]["args"][1].startswith("ugeplan-mcp[garmin] @ git+") and k["garmin"]["args"][-1] == "garmin-mcp"
+    assert set(cli.claude_config()["mcpServers"]) == {"ugeplan"}  # uden Garmin: som før
+    assert cli.klient_vejledning("2", garmin=True).count("claude mcp add") == 2
+    assert '"garmin"' in cli.klient_vejledning("4", garmin=True)
+    svar = iter(["", "", "", "j", "1"])  # nemlig nej, bilka nej, telegram nej, garmin ja, Claude Desktop
+    monkeypatch.setattr("builtins.input", lambda *_: next(svar, ""))
+    cli.kommando(["opsaet"])
+    ud = capsys.readouterr().out
+    assert "garmin-mcp login --person <navn>" in ud and '"garmin"' in ud

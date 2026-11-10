@@ -56,8 +56,9 @@ PROFILENS KRAV ER KRAV (økologi, kød, fisk, mærker)
   profilen fx "økologi har høj prioritet", så vælg øko, når det findes, og skriv kort i
   prisbeskeden, hvis en vare ikke fandtes som øko.
 - FROST: står "frost" i varens navn eller mængde (fx "400 g / frost"), er varen frossen. Siger
-  profilen "fisk fra frost" eller "kun fersk", må den vare ALDRIG i kurven, heller ikke på
-  tilbud. Skriv kun "fersk", når du har set, at der IKKE står frost. "Rødspætte er altid
+  profilen nej til frost (fx "fisk fra frost", "kød fra frost", "kun fersk"), må den slags vare
+  ALDRIG i kurven, heller ikke på tilbud. Husstandens EGET vildt fra fryseren er ikke købt og må
+  gerne bruges. Skriv kun "fersk", når du har set, at der IKKE står frost. "Rødspætte er altid
   vildfanget" siger intet om, om den er fersk (fundet i uge 46: frosne rødspættefileter).
 - Er et krav absolut (fx "kød altid øko", "kun vildfanget fisk"), og kan varen ikke købes
   sådan, så brug en anden protein eller en anden ret (se NÅR EN RET IKKE KAN KØBES

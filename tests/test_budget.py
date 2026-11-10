@@ -12,3 +12,8 @@ def test_budgettet_gælder_en_normal_uge_og_tilpasses():
 def test_eget_vildt_trækkes_fra_budgettet():
     t = ugeplan.FAELLES
     assert "EGNE VARER SKAL KUNNE SES I UGENS BUDGET" in t and "rådyr fra egen fryser" in t
+
+
+def test_frost_gælder_også_kød_men_ikke_eget_vildt():
+    t = ugeplan.FAELLES
+    assert '"kød fra frost"' in t and "EGET vildt fra fryseren er ikke købt" in t

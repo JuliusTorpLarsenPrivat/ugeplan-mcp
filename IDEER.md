@@ -18,3 +18,13 @@ Der kører ingen AI hele tiden. Botten klarer det forudsigelige med faste regler
 - **Beskeder, botten ikke forstår:** i stedet for "skriv fortsæt i chatten" vækkes AI'en og svarer selv, fx "kan vi få noget andet end fisk i morgen?".
 - **Udsolgt efter "bestil":** AI'en vækkes, finder en erstatning og skriver den nye total.
 - **Fast tid:** fx søndag kl. 12 starter AI'en selv ugens madplan.
+
+## Pengene
+
+- **Tilbud først:** når madplanen starter, henter koden ugens tilbud i begge butikker og vælger ugens butik ud fra tilbud på det, der faktisk købes: fersk vildfanget fisk, fugl og de faste varer. Menuen bygges på de tilbud. Fryseren (eget vildt og kød fra kogræsserlauget) bruges stadig først.
+- **Fugl på lager:** store tilbud på øko kylling og and købes og fryses selv, så de står klar til senere uger.
+- **Mål tilbuddene:** ugens tilbud på fisk, fugl og øko-kød gemmes hver uge. Efter et par måneder kan vi se, hvor tit der er gode tilbud, og hvor pengene går hen.
+
+## Nemmere at komme i gang
+
+- **PyPI:** udgiv pakken, så installationen bliver `uvx ugeplan-mcp opsaet`, og læg et lille installationsscript ved, der også installerer uv.

@@ -237,8 +237,8 @@ def haendelser() -> list[dict]:
     return laes("haendelser").get("haendelser", [])
 
 
-def _gem_haendelse(h: dict) -> dict:
-    h = {"tid": datetime.now(TIDSZONE).isoformat(timespec="minutes"), **h}
+def _gem_haendelse(h: dict, nu: datetime | None = None) -> dict:
+    h = {"tid": (nu or datetime.now(TIDSZONE)).isoformat(timespec="minutes"), **h}
     skriv("haendelser", {"haendelser": (haendelser() + [h])[-MAKS_HAENDELSER:]})
     return h
 
@@ -286,14 +286,14 @@ async def koer(nu: datetime | None = None, hent=hent_niveauer) -> list[str]:
     log = []
     if (tekst := paamindelse(p, nu)) and not _i_dag_findes("paamindelse", nu.date()):
         await telegram.send_fra_botten(tekst)
-        _gem_haendelse({"type": "paamindelse", "kode": p.kode, "tekst": tekst})
+        _gem_haendelse({"type": "paamindelse", "kode": p.kode, "tekst": tekst}, nu)
         log.append("påmindelse om optøning sendt")
     if _i_dag_findes("bytteforslag", nu.date()):
         return log
     niveauer = hent(nu.date())
     if forslag := vurder(p, niveauer, nu, _aftensmad()):
         await telegram.send_fra_botten(forslag["tekst"])
-        _gem_haendelse({**forslag, "status": "afventer", "niveau": {n: d.get("niveau") for n, d in niveauer.items()}})
+        _gem_haendelse({**forslag, "status": "afventer", "niveau": {n: d.get("niveau") for n, d in niveauer.items()}}, nu)
         log.append("bytteforslag sendt")
     return log
 

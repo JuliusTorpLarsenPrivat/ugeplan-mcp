@@ -353,6 +353,7 @@ async def test_forslag_sendes_til_begge(tg):
     par(tg, 1, 2)
     await telegram.hent_og_haandter(0)
     p = madplan.gem("nemlig", ["Man 9/11: Chili", "Tir 10/11: Laks"], [{"vare_id": "1", "navn": "x", "antal": 1, "pris": 1.0}])
+    p.oprettet = kl(SOEN, 11).isoformat(timespec="minutes")  # planen er lavet søndag, uanset hvornår testen kører
     tg.sendt.clear()
     assert await telegram.send_leveringsforslag(p, {"nemlig": nemlig_tider(LOER)}, nu=kl(SOEN, 12))
     (tekst,) = {t for _, t in tg.sendt}

@@ -56,7 +56,7 @@ Intet kører i skyen. Alt kører på din egen maskine, og Telegram-botten svarer
 |---|---|
 | En computer med AI-appen åben, når I laver madplan | Madplan, priser, kurv, opskrifter og profil. |
 | + Telegram | Husstanden svarer fra telefonen, mens planen laves. Beskeder imellem bliver hentet, når appen er åben igen, hvis de er under et døgn gamle (Telegrams grænse). |
-| + en maskine, der altid er tændt med appen åben (fx en Mac mini) | Botten svarer altid, og beholdningen kan opdateres fra telefonen hver dag. Intet går tabt. |
+| + en maskine, der altid er tændt med appen åben (fx en Mac mini, se [docs/MAC.md](docs/MAC.md)) | Botten svarer altid, og beholdningen kan opdateres fra telefonen hver dag. Intet går tabt. |
 | + Garmin-ur og Garmin-delen (`[garmin]`, se [docs/GARMIN.md](docs/GARMIN.md)) | Menuen lægges efter jeres træningsmønster, og AI'en kan se søvn, træning og skridt. |
 | + Garmin-login på maskinen, der altid er tændt | **Agil plan efter træning:** botten foreslår at bytte retter, når en dag bliver hårdere eller roligere end planlagt. Se nedenfor. |
 

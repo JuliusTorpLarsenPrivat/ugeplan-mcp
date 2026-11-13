@@ -11,8 +11,8 @@ Uofficiel. Bygger på biblioteket [`garminconnect`](https://github.com/cyberjunk
 Garmin-delen installeres med `[garmin]` efter pakkenavnet. Log ind én gang pr. person, der har sagt ja:
 
 ```powershell
-uvx --from "ugeplan-mcp[garmin] @ git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.37.0" garmin-mcp login --person anna
-uvx --from "ugeplan-mcp[garmin] @ git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.37.0" garmin-mcp test --person anna
+uvx --from "ugeplan-mcp[garmin] @ git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.38.0" garmin-mcp login --person anna
+uvx --from "ugeplan-mcp[garmin] @ git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.38.0" garmin-mcp test --person anna
 ```
 
 `login` spørger om email, kode og evt. MFA-kode. `test` viser gårsdagens søvn og skridt.
@@ -28,11 +28,11 @@ Læg Garmin-serveren ind ved siden af ugeplan, og brug `[garmin]` i begge, så T
   "mcpServers": {
     "ugeplan": {
       "command": "uvx",
-      "args": ["--from", "ugeplan-mcp[garmin] @ git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.37.0", "ugeplan-mcp"]
+      "args": ["--from", "ugeplan-mcp[garmin] @ git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.38.0", "ugeplan-mcp"]
     },
     "garmin": {
       "command": "uvx",
-      "args": ["--from", "ugeplan-mcp[garmin] @ git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.37.0", "garmin-mcp"]
+      "args": ["--from", "ugeplan-mcp[garmin] @ git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.38.0", "garmin-mcp"]
     }
   }
 }

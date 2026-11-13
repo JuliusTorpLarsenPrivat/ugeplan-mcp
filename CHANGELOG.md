@@ -1,6 +1,6 @@
 # Ændringer
 
-## Næste version
+## 0.38.0 (13/11-2026)
 
 - **Tilbud først:** når madplanen starter, henter koden ugens tilbud i butikkerne, sorterer dem efter det, I faktisk køber (fisk, fugl, kød og de faste varer) og efter profilen (frost, øko, færdigretter, smagsvarianter, fedtprocent, mindst 85 % osv.), og foreslår ugens butik. Menuen bygges på tilbuddene i den butik, så en ret aldrig er bygget på et tilbud, I ikke får.
 - Har I kød i fryseren (eget vildt, en kvart ko), tæller kødtilbud ikke med i valget af butik.

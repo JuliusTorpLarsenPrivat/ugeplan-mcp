@@ -89,7 +89,7 @@ Du skal bruge en AI-app med MCP (se *Virker med*), [uv](https://docs.astral.sh/u
 **1. Kør guiden** i en terminal. Den tager dig gennem butikker, Telegram og din AI-app, ét trin ad gangen, og alt kan springes over:
 
 ```powershell
-uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.37.0 ugeplan-mcp opsaet
+uvx --from git+https://github.com/JuliusTorpLarsenPrivat/ugeplan-mcp@v0.38.0 ugeplan-mcp opsaet
 ```
 
 Login gemmes kun i styresystemets nøglering. Til sidst vælger du din AI-app, og guiden viser præcis, hvad du skal sætte ind og hvor.
@@ -144,7 +144,7 @@ Forløbet er en lang samtale med mange værktøjskald. Jo bedre modellen er til 
 - Alle kald går gennem `vagt.py`, som kun tillader butikkernes egne adresser og afviser alt, der ligner bestilling, betaling eller valg af levering.
 - Navn, adresse, telefon og e-mail fjernes fra svarene, før AI'en ser dem.
 - Det, AI'en ser, sendes til den AI-udbyder, din app bruger (fx Anthropic, OpenAI eller GitHub), som en del af samtalen.
-- Lås installationen til en version (`@v0.37.0`), så koden ikke ændrer sig uden din viden.
+- Lås installationen til en version (`@v0.38.0`), så koden ikke ændrer sig uden din viden.
 
 ## Begrænsninger
 

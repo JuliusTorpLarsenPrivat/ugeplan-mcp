@@ -41,6 +41,7 @@ RAEKKEFOLGE = (
     "handle_mcp.beholdning_besked",
     "handle_mcp.samling",
     "handle_mcp.profil",
+    "handle_mcp.tilbud",
     "handle_mcp.madplan",
     "handle_mcp.traening",
     "handle_mcp.telegram",

@@ -81,6 +81,26 @@ UGENS BUDGET (regn det ud, før du laver menuen)
 - Sig altid tydeligt, hvad du sammenligner med: "ugens budget" (ovenstående) eller "normalt
   forbrug" (det vi plejer at bruge ifølge koebsmoenster). De to tal er ikke det samme.
 
+TILBUD FØRST (`tilbud` fra ugeplan_forloeb)
+- `tilbud` viser for hver butik de bedste tilbud på det, vi faktisk køber (fisk, fugl, kød og
+  de faste varer), allerede sorteret fra, når de bryder profilen (frost, ikke øko). `ugens_butik`
+  er butikken, hvor tilbuddene sparer mest.
+- Rækkefølgen, når menuen laves: 1) fryseren og det, vi har hjemme, først (eget vildt, kød fra
+  kogræsserlauget); 2) byg 2-3 retter på tilbuddene i ugens butik, især fisk og fugl; 3) resten
+  af ugen som normalt. Find rigtige opskrifter, der bruger tilbudsvaren.
+- Byg kun på tilbud i ugens butik. Så ender en ret aldrig med at være bygget på et tilbud, vi
+  ikke får. Har vi to butikker, bruges et tilbud i den anden kun, hvis det alene sparer mere end
+  en ekstra levering og poser (ca. 60-80 kr), og også den kurv kan nå minimumskøbet.
+- Skriv én linje i menubeskeden, fx "Bygget på ugens tilbud i Bilka: øko kyllingebryst −30 %,
+  fersk sej −25 %".
+- Prissætningen til sidst afgør stadig butikken. Bliver den anden butik alligevel billigst
+  samlet, så nævn det, men lav ikke menuen om, medmindre vi beder om det.
+- FUGL PÅ LAGER: er der et stort tilbud (mindst 25 %) på fugl, der passer til profilen, så
+  spørg i prisbeskeden, om vi vil købe ekstra til fryseren, fx "Øko kyllingebryst −30 %: skal
+  vi købe 2 ekstra til fryseren (+90 kr)?". Læg det kun i kurven efter et ja, og læg det så i
+  beholdningen (sted "fryser").
+- Er `tilbud` tom (fx intet net), så lav planen som normalt og nævn det ikke.
+
 STØRRE PAKKER: ÉT KØB TIL TO RETTER (der er penge at hente)
 Fundet i uge 46: "det er fint, hvis vi nogle dage får det samme, hvis det er billigere", men
 menuen blev ikke lavet om.
@@ -310,6 +330,7 @@ FORBEREDELSE = """FORBEREDELSE (stille, uden at spørge nogen)
    `garmin` (person = "konto", ellers navnet), og find mønstret pr. ugedag: hvilke ugedage er
    typisk hård eller meget hård, og hvilke rolig. Kun personer med ja i profilen. Er der for
    lidt data, så lav en almindelig plan og nævn det ikke.
+   Læs `tilbud` (se TILBUD FØRST): ugens butik og de tilbud, menuen skal bygges på.
    Gå `beskeder_siden_sidst` (beskeder sendt mellem madplanerne) og profilens fra_husstanden
    igennem efter ØNSKER TIL FREMOVER, og ryd op i profilen, før du laver menuen.
    Tjek kurven i hver butik i `butikker` med vis_kurv. Ligger der varer fra før, så skriv det her i chatten til
@@ -500,6 +521,17 @@ def foerste_spoergsmaal(lev: dict, foer: list[dict] | None = None) -> str:
 
 
 HENT_LEVERING = True  # slås fra i testene (ingen rigtige butikskald)
+HENT_TILBUD = True  # slås fra i testene (ingen rigtige butikskald)
+
+
+async def _hent_tilbud() -> dict:
+    """Ugens bedste tilbud på det, I køber, og et forslag til ugens butik (se tilbud.py)."""
+    from handle_mcp import tilbud
+
+    try:
+        return await tilbud.hent(login.aktive() or ["nemlig"])  # nemligs tilbud virker også uden login
+    except Exception:  # noqa: BLE001  tilbud er en bonus: planen kører videre uden
+        return {}
 FOERSTE_GANG_AKTIV = True  # slås fra i de fleste tests, som har en tom profil
 
 
@@ -522,6 +554,8 @@ async def start() -> dict:
     lev = await _hent_levering() if HENT_LEVERING else {}
     foer = foer_levering(lev)
     faelles = {"butikker": login.aktive(), "levering": lev, "foer_levering": foer}
+    if HENT_TILBUD and (tilbud_ := await _hent_tilbud()):
+        faelles["tilbud"] = tilbud_
     if telegram_klar():
         tidligere = _beskeder_siden_sidst()
         try:

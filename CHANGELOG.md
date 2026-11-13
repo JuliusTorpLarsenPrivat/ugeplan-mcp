@@ -1,5 +1,12 @@
 # Ændringer
 
+## Næste version
+
+- **Tilbud først:** når madplanen starter, henter koden ugens tilbud i butikkerne, sorterer dem efter det, I faktisk køber (fisk, fugl, kød og de faste varer) og efter profilen (frost, øko, færdigretter, smagsvarianter, fedtprocent, mindst 85 % osv.), og foreslår ugens butik. Menuen bygges på tilbuddene i den butik, så en ret aldrig er bygget på et tilbud, I ikke får.
+- Har I kød i fryseren (eget vildt, en kvart ko), tæller kødtilbud ikke med i valget af butik.
+- Fugl på lager: et stort tilbud på fugl giver et spørgsmål om at købe ekstra til fryseren.
+- Ugens tilbud på fisk, fugl og kød gemmes i `tilbud_historik.json`, så det kan ses, hvor tit der er gode tilbud.
+
 ## 0.37.0 (10/11-2026)
 
 - **Garmin er nu en del af ugeplan-mcp.** Den valgfri Garmin-del installeres med `ugeplan-mcp[garmin]` og giver serveren `garmin-mcp` (søvn, hvilepuls, skridt, kalorier, træninger, vægt og dagens belastning, kun læsning). Se [docs/GARMIN.md](docs/GARMIN.md).

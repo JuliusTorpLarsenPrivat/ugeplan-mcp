@@ -23,6 +23,7 @@ def egen_datamappe(tmp_path, monkeypatch, request):
     # Første-gangs-guiden kører kun ved tom profil; den testes for sig (test_opsaetning.py)
     monkeypatch.setattr(ugeplan, "FOERSTE_GANG_AKTIV", False)
     monkeypatch.setattr(ugeplan, "HENT_LEVERING", False)
+    monkeypatch.setattr(ugeplan, "HENT_TILBUD", False)
     from handle_mcp import telegram as _tg
 
     monkeypatch.setattr(_tg, "HENT_LEVERING", False)

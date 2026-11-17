@@ -1,6 +1,6 @@
 # Ændringer
 
-## Næste version
+## 0.38.1 (17/11-2026)
 
 - Rettet: på Windows åbnede Telegram-lytteren et Terminal-vindue, hver gang AI-appen startede. Den starter nu med en skjult konsol.
 

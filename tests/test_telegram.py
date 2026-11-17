@@ -654,3 +654,20 @@ async def test_ja_til_bytteforslag_på_telegram(tg, monkeypatch):
     assert madplan.hent(p.kode).retter == ["Tir: Nakkekoteletter", "Fre: Shakshuka"]
     tekster = [t for _, t in tg.sendt]
     assert any(t.startswith("Byttet: Fre ↔ Tir") for t in tekster) and any("Ugens menu" in t for t in tekster)
+
+
+def test_lytteren_åbner_intet_vindue_på_windows(monkeypatch):
+    """Fundet 17/11: DETACHED_PROCESS gav et Windows Terminal-vindue ved hver opstart, fordi
+    venv'ens python.exe starter et barn, der så laver sin egen konsol. Skjult konsol i stedet."""
+    import subprocess
+
+    flag = []
+    monkeypatch.setattr(telegram, "AUTOSTART", True)
+    monkeypatch.setattr(telegram, "lytter_koerer", lambda: False)
+    monkeypatch.setattr(telegram.sys, "platform", "win32")
+    monkeypatch.setattr(subprocess, "CREATE_NO_WINDOW", 0x08000000, raising=False)
+    monkeypatch.setattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200, raising=False)
+    monkeypatch.setattr(subprocess, "DETACHED_PROCESS", 0x00000008, raising=False)
+    monkeypatch.setattr("subprocess.Popen", lambda kommando, **kw: flag.append(kw["creationflags"]))
+    telegram.start_lytter_i_baggrunden(foraelder=1)
+    assert flag[0] & 0x08000000 and not flag[0] & 0x00000008

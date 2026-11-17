@@ -258,8 +258,11 @@ def start_lytter_i_baggrunden(timer: float = 24, foraelder: int | None = None) -
     kommando += ["--foraelder", str(foraelder)] if foraelder else [f"{timer:g}"]
     flag = 0
     if sys.platform == "win32":
-        # Selvstændig proces uden vindue. "Breakaway" lader den leve videre, hvis Claude Desktop lukkes.
-        flag = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | 0x01000000
+        # Selvstændig proces med en SKJULT konsol (CREATE_NO_WINDOW), ikke DETACHED_PROCESS: venv'ens
+        # python.exe starter selv den rigtige python som barn, og uden en konsol at arve åbnede
+        # barnet sin egen i Windows Terminal ved hver opstart (fundet 17/11). "Breakaway" lader den
+        # leve videre, hvis Claude Desktop lukkes (lytteren stopper så selv, se --foraelder).
+        flag = subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP | 0x01000000
     env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     try:
         subprocess.Popen(kommando, stdout=log_fil, stderr=log_fil, stdin=subprocess.DEVNULL, creationflags=flag, env=env, close_fds=True)

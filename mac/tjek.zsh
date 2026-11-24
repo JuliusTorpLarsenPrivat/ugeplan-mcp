@@ -20,7 +20,8 @@ print "\nMaskinen"
 [[ "$(pmset -g | awk '$1 == "sleep" {print $2}')" == "0" ]] && gron "går ikke i dvale" || rod "kan gå i dvale (MAC.md trin 5)"
 osascript -e 'tell application "System Events" to get the name of every login item' 2>/dev/null | grep -q Claude \
   && gron "Claude starter ved login" || rod "Claude starter ikke ved login (MAC.md trin 4)"
-pgrep -xq Claude && gron "Claude kører" || rod "Claude kører ikke"
+# ps i stedet for pgrep: pgrep ser ikke altid Claude-processen (fx fra en sandkasse)
+ps -axo comm= | grep -q '/Claude.app/Contents/MacOS/Claude$' && gron "Claude kører" || rod "Claude kører ikke"
 pgrep -f "handle_mcp.server telegram" >/dev/null && gron "Telegram-lytteren kører" || rod "Telegram-lytteren kører ikke (åbn Claude, eller se $DATA/telegram-lytter.log)"
 [[ -d /Applications/Tailscale.app ]] && gron "Tailscale er installeret" || gul "Tailscale er ikke installeret (MAC.md trin 6)"
 

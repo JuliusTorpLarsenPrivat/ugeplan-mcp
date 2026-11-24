@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import getpass
 import re
+import sys
 
 from handle_mcp import login
 from handle_mcp.butikker import hent_butik
@@ -29,10 +30,20 @@ HJAELP = __doc__
 
 
 def _udklipsholder() -> str:
-    """Teksten i Windows' udklipsholder (uden at vise den)."""
+    """Teksten i udklipsholderen (uden at vise den). pbpaste på macOS, PowerShell på Windows."""
     import subprocess
 
-    svar = subprocess.run(["powershell", "-NoProfile", "-Command", "Get-Clipboard"], capture_output=True, text=True, encoding="utf-8")
+    if sys.platform == "darwin":
+        kommando = ["pbpaste"]
+    elif sys.platform == "win32":
+        kommando = ["powershell", "-NoProfile", "-Command", "Get-Clipboard"]
+    else:
+        kommando = ["xclip", "-selection", "clipboard", "-o"]
+    try:
+        svar = subprocess.run(kommando, capture_output=True, text=True, encoding="utf-8")
+    except FileNotFoundError:
+        print(f"Kan ikke læse udklipsholderen ({kommando[0]} findes ikke). Kør: ugeplan-mcp telegram-opsaet")
+        return ""
     return svar.stdout or ""
 
 

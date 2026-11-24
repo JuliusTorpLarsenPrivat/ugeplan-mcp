@@ -1,5 +1,10 @@
 # Ændringer
 
+## 0.38.2 (24/11-2026)
+
+- Rettet: `ugeplan-mcp telegram-opsaet udklipsholder` virker nu på Mac (pbpaste). Før kaldte den PowerShell og stoppede med en fejl.
+- Rettet: `mac/tjek.zsh` sagde "Claude kører ikke", selvom appen kørte. Tjekket bruger nu `ps` i stedet for `pgrep`.
+
 ## 0.38.1 (17/11-2026)
 
 - Rettet: på Windows åbnede Telegram-lytteren et Terminal-vindue, hver gang AI-appen startede. Den starter nu med en skjult konsol.

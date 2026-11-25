@@ -28,7 +28,7 @@ import httpx
 import keyring
 import keyring.errors
 
-from handle_mcp import beholdning_besked, lokal, madplan, profil, traening
+from handle_mcp import beholdning_besked, claude_p, lokal, madplan, profil, traening
 from handle_mcp.lokal import laes, skriv
 from handle_mcp.login import TJENESTE
 from handle_mcp.vagt import VagtFejl, ny_klient, send
@@ -246,8 +246,8 @@ def start_lytter_i_baggrunden(timer: float = 24, foraelder: int | None = None) -
     """Start lytteren som et selvstændigt program uden vindue, hvis den ikke kører.
     Den skriver til telegram-lytter.log. Med `foraelder` (serverens proces-id) lytter den, så
     længe serveren, og dermed AI-appen, kører; ellers i `timer` timer."""
-    if not AUTOSTART or lytter_koerer():
-        return False
+    if not AUTOSTART or os.environ.get(claude_p.HEADLESS_ENV) or lytter_koerer():
+        return False  # en server startet af claude -p starter aldrig en lytter
     import subprocess
 
     from handle_mcp.lokal import mappe
@@ -543,10 +543,41 @@ async def haandter(opdatering: dict) -> str | None:
             husket = True
         except Exception as fejl:  # noqa: BLE001  beskeden må aldrig gå tabt
             log.warning("Kunne ikke gemme ønsket i profilen: %s", fejl)
+    if not husket and not plan_i_gang() and claude_p.slaaet_til():
+        if h := await _fri_tekst(chat_id, navn, tekst):
+            return h
     _gem_besked(navn, tekst, husket=husket)
     await _videresend(chat_id, navn, tekst)
     await _svar(chat_id, kvittering())
     return f"besked fra {navn} gemt" + (" (også i profilen)" if husket else "")
+
+
+async def _fri_tekst(chat_id: str, navn: str, tekst: str) -> str | None:
+    """Fri tekst, mens ingen AI-assistent er i gang: spørg claude -p og svar med det samme.
+    None, hvis det ikke lykkedes. Så gemmes beskeden til AI-assistenten som før."""
+    if not claude_p.tag_plads():
+        _gem_besked(navn, tekst)
+        await _videresend(chat_id, navn, tekst)
+        await _svar(chat_id, claude_p.GRAENSE_TEKST)
+        return f"fri tekst fra {navn}: grænsen for claude -p er nået"
+    historik = laes("beskeder").get("beskeder", [])
+    try:
+        await api("sendChatAction", chat_id=int(chat_id), action="typing")
+    except TelegramFejl:
+        pass
+    nu = datetime.now(TIDSZONE)
+    dag = ("mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag", "søndag")[nu.weekday()]
+    svar = await claude_p.besvar(navn, tekst, historik, f"{dag} {nu:%d/%m-%Y kl. %H.%M}")
+    if not svar:
+        _gem_besked(navn, tekst)
+        await _videresend(chat_id, navn, tekst)
+        await _svar(chat_id, claude_p.FEJL_TEKST)
+        return f"fri tekst fra {navn}: claude -p fejlede"
+    _gem_besked(navn, tekst, laest=True)  # besvaret: AI-assistenten skal ikke tage den igen
+    await _videresend(chat_id, navn, tekst)
+    await _svar(chat_id, svar)  # kun til den, der spurgte (svaret kan have helbredsdata)
+    _gem_besked("handle-botten", f"Svar til {navn}: {svar}", laest=True)
+    return f"fri tekst fra {navn} besvaret af claude -p"
 
 
 async def hent_og_haandter(vent_sekunder: int = 25) -> list[str]:

@@ -111,8 +111,12 @@ _sidst_markeret: dict[str, float] = {}  # pr. mappe (testene bruger hver sin)
 
 
 def marker_claude_aktiv() -> None:
-    """Højst én skrivning hvert 10. sekund, så en ventende løkke ikke skriver hele tiden."""
+    """Højst én skrivning hvert 10. sekund, så en ventende løkke ikke skriver hele tiden.
+    En server startet af claude -p (lytterens svar på fri tekst) tæller ikke som "AI'en er i gang"."""
     import time
+
+    if os.environ.get("UGEPLAN_HEADLESS"):
+        return
 
     nu = time.time()
     m = str(mappe())

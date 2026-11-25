@@ -44,6 +44,7 @@ RAEKKEFOLGE = (
     "handle_mcp.tilbud",
     "handle_mcp.madplan",
     "handle_mcp.traening",
+    "handle_mcp.claude_p",
     "handle_mcp.telegram",
     "handle_mcp.ugeplan",
 )

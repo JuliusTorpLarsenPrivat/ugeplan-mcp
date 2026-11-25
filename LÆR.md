@@ -43,6 +43,7 @@ En gennemgang til dig, der vil forstå MCP, Python-projektet og GitHub, ikke kun
 | `src/handle_mcp/madplan.py` | Ugeplanen: gemt med kode, godkendelse og præcis kurv. |
 | `src/handle_mcp/opskrifter_web.py` | Henter opskrifter fra jeres opskriftssider (fire formater). |
 | `src/handle_mcp/telegram.py` | Jeres Telegram-bot: send, modtag, parring og OK fra telefonen. |
+| `src/handle_mcp/claude_p.py` | Svar på fri tekst med det samme via headless Claude Code (`claude -p`), kun læsning og højst 20 i timen. |
 | `src/handle_mcp/historik.py` | Købsmønster ud fra kvitteringer: basisvarer, favoritter og budget. |
 | `src/handle_mcp/profil.py` | Personer, ugebudget, præferencer og ting at undgå. |
 | `src/handle_mcp/netvaerk.py` | Kører serveren over HTTP med adgangsnøgle (til en maskine, der altid er tændt). |

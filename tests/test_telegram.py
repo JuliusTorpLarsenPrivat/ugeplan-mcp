@@ -671,3 +671,181 @@ def test_lytteren_åbner_intet_vindue_på_windows(monkeypatch):
     monkeypatch.setattr("subprocess.Popen", lambda kommando, **kw: flag.append(kw["creationflags"]))
     telegram.start_lytter_i_baggrunden(foraelder=1)
     assert flag[0] & 0x08000000 and not flag[0] & 0x00000008
+
+
+# --- fri tekst besvares med det samme af claude -p --------------------------------------
+
+
+class FalskClaude:
+    """Står i stedet for `claude -p` og husker, hvordan den blev kaldt."""
+
+    def __init__(self, svar="I aften: frikadeller med kartofler.", kode=0):
+        self.kald: list[list[str]] = []
+        self.svar = svar
+        self.kode = kode
+
+    async def __call__(self, argv):
+        self.kald.append(argv)
+        if isinstance(self.svar, Exception):
+            raise self.svar
+        return self.kode, json.dumps({"type": "result", "is_error": self.kode != 0, "result": self.svar})
+
+    def flag(self, navn):
+        argv = self.kald[-1]
+        return argv[argv.index(navn) + 1]
+
+
+@pytest.fixture
+def claude(tg, monkeypatch):
+    from handle_mcp import claude_p
+
+    falsk = FalskClaude()
+    monkeypatch.setattr(claude_p, "AKTIV", True)
+    monkeypatch.setattr(claude_p, "find_claude", lambda: "/falsk/claude")
+    monkeypatch.setattr(claude_p, "KOER", falsk)
+    monkeypatch.setattr(claude_p, "_desktop_konfig", lambda: __import__("pathlib").Path("/findes/ikke.json"))
+    return falsk
+
+
+async def test_fri_tekst_besvares_af_claude_p(tg, claude):
+    par(tg, 1, 2)
+    await telegram.hent_og_haandter(0)
+    tg.besked(1, "hvad skal vi have i aften?", navn="Julius")
+    assert (await telegram.hent_og_haandter(0))[-1] == "fri tekst fra Julius besvaret af claude -p"
+    assert tg.sendt[-1] == (1, "I aften: frikadeller med kartofler.")
+    assert (2, "Julius: hvad skal vi have i aften?") in tg.sendt  # spørgsmålet ses på den anden telefon
+    assert (2, "I aften: frikadeller med kartofler.") not in tg.sendt  # svaret kun til den, der spurgte
+    assert telegram.antal_ulaeste() == 0  # besvaret: AI-assistenten skal ikke tage den igen
+    assert "hvad skal vi have i aften?" in claude.kald[-1][2]
+
+
+async def test_claude_p_kan_kun_laese(tg, claude):
+    from handle_mcp import claude_p
+
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    tg.besked(1, "hvad koster mælk hos nemlig?")
+    await telegram.hent_og_haandter(0)
+    assert "--strict-mcp-config" in claude.kald[-1]
+    assert claude.flag("--tools") == ""  # ingen Bash, filer eller web
+    assert claude.flag("--permission-mode") == "dontAsk"
+    tilladt = claude.flag("--allowedTools").split(",")
+    for skriver in ("saet_antal_i_kurv", "fyld_kurv_fra_madplan", "gem_madplan", "opdater_profil", "opdater_beholdning",
+                    "send_besked", "vis_beskeder", "vent_paa_svar", "ugeplan_forloeb", "gem_opskrift", "fjern_opskrift"):
+        assert f"mcp__ugeplan__{skriver}" not in tilladt
+    findes = {t.name for t in await server.mcp.list_tools()}
+    assert {v for v in claude_p.UGEPLAN_LAES} <= findes  # stavet som i serveren
+    konfig = json.loads(claude.flag("--mcp-config"))
+    assert konfig["mcpServers"]["ugeplan"]["env"][claude_p.HEADLESS_ENV] == "1"
+
+
+async def test_faste_kommandoer_bruger_ikke_claude_p(tg, claude, monkeypatch):
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    for tekst in ("menu", "har 2 kg kartofler", "fortryd"):
+        tg.besked(1, tekst)
+        await telegram.hent_og_haandter(0)
+    assert claude.kald == []
+
+
+async def test_claude_p_bruges_ikke_mens_ai_assistenten_er_i_gang(tg, claude):
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    assert await telegram.vent_paa_svar(1) == []  # AI-assistenten venter på svar
+    tg.besked(1, "vi har agurk og mel")
+    await telegram.hent_og_haandter(0)
+    assert claude.kald == [] and tg.sendt[-1] == (1, "Modtaget.")
+
+
+async def test_claude_p_bruges_ikke_mens_madplanen_venter(tg, claude):
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    telegram._gem_besked(telegram.SENDT_AF, telegram.SPOERGSMAAL_START + " Hvad har I i køleskabet?", laest=True)
+    tg.besked(1, "vi har agurk og mel")
+    await telegram.hent_og_haandter(0)
+    assert claude.kald == [] and tg.sendt[-1] == (1, telegram.IKKE_LYTTER)
+
+
+async def test_hoejst_20_koersler_i_timen(tg, claude):
+    from handle_mcp import claude_p
+
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    for i in range(claude_p.MAKS_PR_TIME + 1):
+        tg.besked(1, f"spørgsmål {i}")
+    await telegram.hent_og_haandter(0)
+    assert len(claude.kald) == claude_p.MAKS_PR_TIME
+    assert tg.sendt[-1] == (1, claude_p.GRAENSE_TEKST)
+    assert telegram.antal_ulaeste() == 1  # gemt til AI-assistenten
+    assert claude_p.tag_plads(nu=__import__("time").time() + 3601)  # en time efter er der plads igen
+
+
+@pytest.mark.parametrize("fejl", ["kode", "tom", "timeout", "mangler"])
+async def test_fejl_i_claude_p_taber_ikke_beskeden(tg, claude, fejl):
+    from handle_mcp import claude_p
+
+    if fejl == "kode":
+        claude.kode = 1
+    elif fejl == "tom":
+        claude.svar = "  "
+    elif fejl == "timeout":
+        claude.svar = TimeoutError()
+    else:
+        claude.svar = FileNotFoundError()
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    tg.besked(1, "hvordan sov jeg?")
+    await telegram.hent_og_haandter(0)
+    assert tg.sendt[-1] == (1, claude_p.FEJL_TEKST)
+    assert [b["tekst"] for b in telegram.beskeder()] == ["hvordan sov jeg?"]
+
+
+async def test_claude_p_kan_slaas_fra(tg, claude):
+    from handle_mcp import claude_p
+
+    skriv(claude_p.FIL, {"fra": True})
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    tg.besked(1, "hvad skal vi have i aften?")
+    await telegram.hent_og_haandter(0)
+    assert claude.kald == [] and tg.sendt[-1] == (1, telegram.IKKE_LYTTER)
+
+
+async def test_fremmede_kan_ikke_bruge_claude_p(tg, claude):
+    tg.besked(99, "hvad skal vi have i aften?")
+    await telegram.hent_og_haandter(0)
+    assert claude.kald == [] and tg.sendt == []
+
+
+def test_claude_p_bruger_abonnementet_og_appens_servere(tmp_path, monkeypatch):
+    from handle_mcp import claude_p, lokal
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-falsk")
+    assert "ANTHROPIC_API_KEY" not in claude_p._miljoe()
+    konfig = tmp_path / "claude_desktop_config.json"
+    konfig.write_text(json.dumps({"mcpServers": {
+        "ugeplan": {"command": "/hjem/.local/bin/ugeplan-mcp", "args": []},
+        "garmin": {"command": "/hjem/.local/bin/garmin-mcp", "args": []},
+        "andet": {"command": "noget-andet"},
+    }}))
+    monkeypatch.setattr(claude_p, "_desktop_konfig", lambda: konfig)
+    k = claude_p.mcp_konfig()
+    assert set(k["mcpServers"]) == {"ugeplan", "garmin"}  # kun vores egne servere
+    assert k["mcpServers"]["garmin"]["command"] == "/hjem/.local/bin/garmin-mcp"
+    assert "mcp__garmin" in claude_p.tilladte_vaerktoejer(k)
+    # en server startet af claude -p tæller ikke som "AI-assistenten er i gang" og starter ingen lytter
+    monkeypatch.setenv(claude_p.HEADLESS_ENV, "1")
+    monkeypatch.setattr(telegram, "AUTOSTART", True)
+    lokal.marker_claude_aktiv()
+    assert lokal.sekunder_siden_claude() is None
+    assert telegram.start_lytter_i_baggrunden() is False
+
+
+def test_claude_findes_ikke_giver_det_gamle_svar(monkeypatch):
+    from handle_mcp import claude_p
+
+    monkeypatch.setattr(claude_p, "AKTIV", True)
+    monkeypatch.setattr(claude_p.shutil, "which", lambda _: None)
+    monkeypatch.setattr(claude_p.Path, "home", lambda: __import__("pathlib").Path("/findes/ikke"))
+    monkeypatch.setattr(claude_p.Path, "is_file", lambda self: False)
+    assert claude_p.find_claude() is None and not claude_p.slaaet_til()

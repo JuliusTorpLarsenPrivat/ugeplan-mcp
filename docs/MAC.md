@@ -110,6 +110,42 @@ Telegram giver kun beskeder til én lytter ad gangen. Har en anden computer ogs�
 
 Fjern derfor ugeplan-serveren fra AI-appen på den anden computer, når Mac'en kører. Tag en kopi af konfigurationen først.
 
+## 8. Svar med det samme (`claude -p`)
+
+Uden dette svarer botten "AI-assistenten er ikke i gang", når I skriver et spørgsmål mellem madplanerne. Med Claude Code installeret på Mac'en svarer den selv med det samme, fx på "hvad skal vi have i aften?" eller "hvordan sov jeg i nat?". Det kører på dit Claude-abonnement (Pro eller Max), ikke på API'en.
+
+Claude-appens indbyggede Code-fane giver ingen `claude`-kommando i Terminal. Installér derfor Claude Code med Anthropics officielle installationsscript. Det lægger `claude` i `~/.local/bin` og opdaterer sig selv:
+
+```zsh
+curl -fsSL https://claude.ai/install.sh | bash
+claude --version
+```
+
+Log ind med Claude-kontoen (ikke en API-nøgle):
+
+```zsh
+claude
+```
+
+Vælg **Claude account with subscription**, log ind i browseren, og afslut med `/exit`. Spørger macOS, om `claude` må bruge nøgleringen, så vælg **Tillad altid**.
+
+Prøv det, som lytteren gør:
+
+```zsh
+cd /tmp && claude -p "Svar kun: virker" --tools "" --output-format json
+```
+
+Svaret skal have `"is_error":false`. Der skal ikke genstartes noget: lytteren finder `claude` ved næste besked.
+
+Sådan virker det:
+- Kun koblede telefoner. Faste kommandoer (OK UGE-xxxx, ja, menu, beholdning) klares stadig uden AI.
+- Kun når ingen AI-assistent arbejder, og ingen madplan venter på svar. Ellers går beskeden til assistenten som før.
+- Claude får kun værktøjer, der læser (madplan, opskrifter, kurv, beholdning, profil, tilbud, Garmin). Den kan ikke ændre kurven og aldrig bestille eller betale.
+- Højst 20 svar i timen for hele husstanden. Derefter siger botten det kort.
+- Svaret går kun til den, der spurgte.
+- Slå det fra med `{"fra": true}` i `~/.local/share/handle-mcp/claude_p.json`. Ligger `claude` et andet sted, så skriv stien som `{"claude": "/sti/til/claude"}` i samme fil.
+- Fejl står i `telegram-lytter.log` (kun fejltypen, aldrig beskeden). Logger `claude` ud, så kør `claude` og log ind igen.
+
 ## Tjekliste til første døgn
 
 Kør tjekket, når alt ovenfor er gjort, og igen næste dag:
@@ -132,6 +168,7 @@ Det ændrer intet og viser kun niveauer, aldrig tal fra uret.
 | 8 | Påmindelse kl. 20 | dagen før en ret, der skal tøs op | beskeden kommer ca. kl. 20, og `tjek.zsh` viser `paamindelse` |
 | 9 | Kun én lytter | den anden computer | ugeplan er fjernet fra AI-appen dér (trin 7) |
 | 10 | Fjernadgang | fra din egen computer via Tailscale | skærmdeling og `ssh` virker |
+| 11 | Svar med det samme | skriv "hvad skal vi have i aften?" på Telegram, når ingen madplan er i gang | et rigtigt svar inden for et minut, ikke "AI-assistenten er ikke i gang" |
 
 Punkt 6 og 8 kræver, at ugens plan har en ret, der passer. Ellers venter de til den første uge, hvor det sker.
 

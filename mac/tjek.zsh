@@ -30,6 +30,12 @@ print "\nInstallation"
 grep -q "\"$BIN/ugeplan-mcp\"" "$HOME/Library/Application Support/Claude/claude_desktop_config.json" 2>/dev/null \
   && gron "Claude starter ugeplan-mcp herfra" || rod "Claude-konfigurationen peger ikke på $BIN/ugeplan-mcp (kør installer.zsh)"
 
+if [[ -x "$HOME/.local/bin/claude" ]] || command -v claude >/dev/null; then
+  gron "Claude Code (claude) findes: botten svarer på fri tekst med det samme"
+else
+  gul "Claude Code (claude) er ikke installeret: botten svarer ikke selv på fri tekst (MAC.md trin 8)"
+fi
+
 print "\nGarmin (belastning --alle, som appen kører den)"
 UD="$(mktemp)"; ERR="$(mktemp)"
 som_appen "$BIN/garmin-mcp" belastning --alle --dato "$(date +%F)" > "$UD" 2> "$ERR"

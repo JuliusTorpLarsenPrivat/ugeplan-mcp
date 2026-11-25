@@ -1,5 +1,15 @@
 # Ændringer
 
+## 0.39.0 (25/11-2026)
+
+- **Svar på fri tekst med det samme:** skriver en koblet telefon noget, som botten ikke selv klarer, mens ingen AI-assistent eller madplan er i gang (fx "hvad skal vi have i aften?" eller "hvordan sov jeg?"), spørger lytteren headless Claude Code (`claude -p`) med ugeplan- og Garmin-serverne og sender svaret tilbage på Telegram. Kræver, at `claude` er installeret og logget ind på maskinen (se [docs/MAC.md](docs/MAC.md)). Uden `claude` er alt som før.
+- Faste kommandoer (OK UGE-xxxx, ja til bytteforslag, menu, beholdning) klares stadig uden AI.
+- `claude -p` får kun værktøjer, der læser: ingen ændringer i kurv, plan, profil eller beholdning, ingen indbyggede værktøjer (Bash, filer, web), og der bestilles og betales aldrig.
+- Højst 20 kørsler i timen for hele husstanden. Derefter en kort besked, og beskeden gemmes til AI-assistenten.
+- Kører på Claude-abonnementet: en `ANTHROPIC_API_KEY` i miljøet fjernes før kaldet.
+- Svaret går kun til den, der spurgte, fordi det kan indeholde helbredsdata.
+- Slås fra med `{"fra": true}` i `claude_p.json` i datamappen.
+
 ## 0.38.2 (24/11-2026)
 
 - Rettet: `ugeplan-mcp telegram-opsaet udklipsholder` virker nu på Mac (pbpaste). Før kaldte den PowerShell og stoppede med en fejl.

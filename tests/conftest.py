@@ -27,3 +27,7 @@ def egen_datamappe(tmp_path, monkeypatch, request):
     from handle_mcp import telegram as _tg
 
     monkeypatch.setattr(_tg, "HENT_LEVERING", False)
+    from handle_mcp import claude_p as _claude_p
+
+    # Aldrig en rigtig claude -p fra testene, heller ikke når Claude Code er installeret
+    monkeypatch.setattr(_claude_p, "AKTIV", False)

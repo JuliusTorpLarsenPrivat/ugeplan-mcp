@@ -19,7 +19,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
-from handle_mcp import beholdning, data, fordeling, genindlaes, historik, login, lokal, madplan, maengde, opskrifter_web, persondata, profil, samling, telegram, vagt
+from handle_mcp import beholdning, data, fordeling, genindlaes, ha, ha_besked, historik, login, lokal, madplan, maengde, opskrifter_web, persondata, profil, samling, telegram, vagt
 from handle_mcp import butikker as butik_modul
 from handle_mcp import sammenlign as sml
 from handle_mcp import ugeplan as ugeplan_modul
@@ -481,6 +481,45 @@ async def fyld_kurv_fra_madplan(kode: str, godkendelse: str, kurven_maa_have_and
 async def leveringstider(butik: str = "nemlig", dage: int = 5) -> Any:
     """Ledige leveringstider med pris. Kun til orientering: brugeren vælger selv tiden."""
     return await _koer(_butik(butik).leveringstider(min(dage, 14)))
+
+
+# --- bilen i Home Assistant (ha.py) ----------------------------------------------------
+
+
+@vaerktoej(LOKAL_LAESER)
+async def bil_status() -> Any:
+    """Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid eller
+    undtagelse), planlagt opladning, om den lader nu, batteri i %, elpris nu (kr./kWh) og laderen.
+    `tekst` er et færdigt svar til husstanden."""
+    try:
+        s = await ha.status()
+    except ha.HAFejl as fejl:
+        raise ToolError(str(fejl)) from None
+    return {**s.__dict__, "tekst": s.tekst()}
+
+
+@vaerktoej(ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
+async def bil_klar(tid: str) -> Any:
+    """Sæt hvornår bilen skal være klar næste morgen, kun denne gang (fx "07:30"), eller "normal"
+    for ugedagens faste tid. Home Assistant planlægger opladningen ud fra den (rundet ned til
+    kvarter; om dagen først kl. 18). Giver svaret til husstanden."""
+    h = ha_besked.fortolk("klar normal" if tid.strip().lower() in ("normal", "fast", "") else f"klar {tid}")
+    if not h or h.hvad != "klar":
+        raise ToolError('Skriv tiden som "07:30", eller "normal".')
+    try:
+        return {"svar": await ha.saet_klar(h.tid)}
+    except ha.HAFejl as fejl:
+        raise ToolError(str(fejl)) from None
+
+
+@vaerktoej(ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
+async def bil_oplad(start: bool) -> Any:
+    """Start (start=True) eller stop (start=False) bilens opladning nu, uden om planen.
+    Kun når nogen beder om det. Laderen kan være et minut om at reagere."""
+    try:
+        return {"svar": await ha.oplad(start)}
+    except ha.HAFejl as fejl:
+        raise ToolError(str(fejl)) from None
 
 
 @vaerktoej(LAESER)

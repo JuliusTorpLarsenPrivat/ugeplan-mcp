@@ -9,6 +9,62 @@
   }
  },
  "vaerktoejer": {
+  "bil_klar": {
+   "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": false,
+    "read_only_hint": false
+   },
+   "description": "Sæt hvornår bilen skal være klar næste morgen, kun denne gang (fx \"07:30\"), eller \"normal\"\nfor ugedagens faste tid. Home Assistant planlægger opladningen ud fra den (rundet ned til\nkvarter; om dagen først kl. 18). Giver svaret til husstanden.",
+   "input_schema": {
+    "properties": {
+     "tid": {
+      "title": "Tid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "tid"
+    ],
+    "title": "bil_klarArguments",
+    "type": "object"
+   }
+  },
+  "bil_oplad": {
+   "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": false,
+    "open_world_hint": false,
+    "read_only_hint": false
+   },
+   "description": "Start (start=True) eller stop (start=False) bilens opladning nu, uden om planen.\nKun når nogen beder om det. Laderen kan være et minut om at reagere.",
+   "input_schema": {
+    "properties": {
+     "start": {
+      "title": "Start",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "start"
+    ],
+    "title": "bil_opladArguments",
+    "type": "object"
+   }
+  },
+  "bil_status": {
+   "annotations": {
+    "open_world_hint": false,
+    "read_only_hint": true
+   },
+   "description": "Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid eller\nundtagelse), planlagt opladning, om den lader nu, batteri i %, elpris nu (kr./kWh) og laderen.\n`tekst` er et færdigt svar til husstanden.",
+   "input_schema": {
+    "properties": {},
+    "title": "bil_statusArguments",
+    "type": "object"
+   }
+  },
   "fjern_opskrift": {
    "annotations": {
     "destructive_hint": true,

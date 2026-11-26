@@ -28,7 +28,7 @@ import httpx
 import keyring
 import keyring.errors
 
-from handle_mcp import beholdning_besked, claude_p, lokal, madplan, profil, traening
+from handle_mcp import beholdning_besked, claude_p, ha, ha_besked, lokal, madplan, profil, traening
 from handle_mcp.lokal import laes, skriv
 from handle_mcp.login import TJENESTE
 from handle_mcp.vagt import VagtFejl, ny_klient, send
@@ -524,6 +524,14 @@ async def haandter(opdatering: dict) -> str | None:
             return f"ugemenu sendt til {navn}"
         await _svar(chat_id, "Der er ingen madplan i kurven lige nu.")
         return f"ingen ugemenu til {navn}"
+    if (bil := ha_besked.fortolk(tekst)) and ha.sat_op():
+        # Bilen i Home Assistant, uden AI'en: "bil", "klar 7", "klar normal", "oplad nu", "stop opladning".
+        svar = await ha_besked.udfoer(bil)
+        _gem_besked(navn, tekst, laest=True)
+        await _videresend(chat_id, navn, tekst)
+        await _svar(chat_id, svar)
+        _gem_besked("handle-botten", f"Svar til {navn}: {svar}", laest=True)
+        return f"bil ({bil.hvad}) fra {navn}"
     if not plan_i_gang() and (handling := beholdning_besked.fortolk(tekst)):
         # Uden AI'en: "har 2 kg kartofler", "skudt et rådyr, ligger i fryseren", "fortryd".
         # Mens en plan er i gang, er "vi har …" et svar til AI'en og bliver ikke rørt her.

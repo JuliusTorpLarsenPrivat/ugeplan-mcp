@@ -146,6 +146,29 @@ Sådan virker det:
 - Slå det fra med `{"fra": true}` i `~/.local/share/handle-mcp/claude_p.json`. Ligger `claude` et andet sted, så skriv stien som `{"claude": "/sti/til/claude"}` i samme fil.
 - Fejl står i `telegram-lytter.log` (kun fejltypen, aldrig beskeden). Logger `claude` ud, så kør `claude` og log ind igen.
 
+## 9. Bilen fra Telegram (Home Assistant)
+
+Kun hvis I har Home Assistant med EV Smart Charging og klar-tiden fra Smarthome-projektet (`input_datetime.bilen_skal_vaere_klar_kl`).
+
+1. I Home Assistant: klik på dit navn nederst til venstre → **Sikkerhed** → **Langtidsadgangstokens** → **Opret token**. Kald det "ugeplan-lytter", og kopiér det.
+2. I Terminal (tokenet læses fra udklipsholderen og vises ikke):
+
+```zsh
+ugeplan-mcp ha-opsaet
+```
+
+Kører Home Assistant et andet sted end i VM'en på denne Mac, så skriv adressen bagefter, fx `ugeplan-mcp ha-opsaet http://192.168.1.189:8123`. Kun adresser på hjemmenettet virker.
+
+3. Kommandoen viser bilens status. Genstart Claude-appen, så lytteren og de nye værktøjer kommer med.
+
+Skriv til botten:
+- *"bil"*: klar-tid, planlagt opladning, batteri og elpris
+- *"klar 7"*, *"klar 07:30"*: bilen skal være klar næste morgen, kun denne gang (rundes ned til kvarter; sat om dagen planlægges det kl. 18)
+- *"klar normal"*: tilbage til ugedagens faste tid
+- *"oplad nu"*, *"stop opladning"*: laderen kan være et minut om at reagere
+
+Fri tekst ("hvad koster strømmen i aften?") besvares af `claude -p` med Home Assistant (kun læsning). Den må også styre bilen med de samme fem ting, men intet andet. Fjern adgangen igen ved at slette tokenet i Home Assistant.
+
 ## Tjekliste til første døgn
 
 Kør tjekket, når alt ovenfor er gjort, og igen næste dag:

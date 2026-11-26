@@ -9,7 +9,8 @@ Regler:
     botten selv, uden AI. Dette modul bruges først bagefter.
   - Højst MAKS_PR_TIME kørsler i timen for hele husstanden. Derefter en kort besked.
   - Kun værktøjer, der læser. Claude kan herfra hverken ændre kurven, planen, profilen eller
-    beholdningen, og intet i ugeplan-mcp kan bestille eller betale.
+    beholdningen, og intet i ugeplan-mcp kan bestille eller betale. Eneste undtagelse er bilen
+    (bil_klar, bil_oplad), når Home Assistant er sat op; resten af Home Assistant kun læsning.
   - Kører på brugerens eget Claude-abonnement (login i Claude Code). En API-nøgle i miljøet
     fjernes, så der aldrig betales pr. kald ved en fejl.
   - Slås fra med {"fra": true} i claude_p.json i datamappen, eller ved at `claude` ikke findes.
@@ -26,7 +27,7 @@ import sys
 import time
 from pathlib import Path
 
-from handle_mcp import lokal
+from handle_mcp import ha, lokal
 
 log = logging.getLogger(__name__)
 
@@ -62,11 +63,21 @@ UGEPLAN_LAES = (
     "koebsmoenster",
 )
 
+# Bilen (ugeplan-mcp's egne værktøjer, se ha.py): de eneste ændringer i Home Assistant, Claude
+# kan lave herfra. Julius 26/11-2026: claude -p må læse og styre bilen.
+UGEPLAN_BIL = ("bil_status", "bil_klar", "bil_oplad")
+
+# Home Assistant-MCP'en (samme som i AI-appen), kun værktøjer der læser. ha_call_service og
+# alle andre skrivende værktøjer gives aldrig.
+HA_LAES = ("ha_get_state", "ha_search", "ha_get_history", "ha_get_overview", "ha_get_entity", "ha_list_floors_areas")
+
 SYSTEM = """Du svarer husstanden på Telegram gennem deres madplans-bot. Ingen kan svare dig tilbage i denne samtale, så svar færdigt i ét svar.
 - Svar kort på dansk i almindelig tekst: ingen tabeller, ingen overskrifter, højst ca. 1.000 tegn.
 - Brug værktøjerne til at slå op i madplan, opskrifter, kurv, beholdning, profil, tilbud og Garmin-data, før du svarer. Gæt ikke.
 - Du kan herfra ikke ændre kurven, madplanen, profilen eller beholdningen, og der bestilles og betales aldrig. Beder de om en ændring, så sig kort, hvordan de selv gør: "OK UGE-xxxx" godkender en plan, "har 2 kg kartofler" retter beholdningen, og alt andet kan de bede AI-assistenten i appen om.
-- Garmin-data er helbredsdata: nævn kun de tal, der svarer på spørgsmålet, og stil ingen diagnoser."""
+- Garmin-data er helbredsdata: nævn kun de tal, der svarer på spørgsmålet, og stil ingen diagnoser.
+- Bilen (BMW i3s): bil_status viser klar-tid, planlagt opladning, batteri og elpris. bil_klar sætter, hvornår bilen skal være klar næste morgen (kun denne gang), eller tilbage til fast tid. bil_oplad starter eller stopper opladningen nu. Gør kun det, der bliver bedt om, og sig bagefter, hvad der er sat. De faste beskeder virker også uden dig: "bil", "klar 7", "klar normal", "oplad nu", "stop opladning".
+- Home Assistant (homeassistant-værktøjerne) kan du kun læse i, fx elpris, varmepumpe og temperaturer. Andet end bilen kan ikke ændres herfra."""
 
 
 def _indstillinger() -> dict:
@@ -119,7 +130,7 @@ def mcp_konfig() -> dict:
     except (OSError, ValueError):
         servere = {}
     ud = {}
-    for navn in ("ugeplan", "garmin"):
+    for navn in ("ugeplan", "garmin", "homeassistant"):
         if isinstance(s := servere.get(navn), dict) and s.get("command"):
             ud[navn] = {"command": s["command"], "args": list(s.get("args", [])), "env": dict(s.get("env", {}))}
     if "ugeplan" not in ud:
@@ -133,8 +144,12 @@ def mcp_konfig() -> dict:
 
 def tilladte_vaerktoejer(konfig: dict) -> list[str]:
     ud = [f"mcp__ugeplan__{v}" for v in UGEPLAN_LAES]
+    if ha.sat_op():
+        ud += [f"mcp__ugeplan__{v}" for v in UGEPLAN_BIL]
     if "garmin" in konfig["mcpServers"]:
         ud.append("mcp__garmin")  # Garmin-serveren kan kun læse
+    if "homeassistant" in konfig["mcpServers"]:
+        ud += [f"mcp__homeassistant__{v}" for v in HA_LAES]
     return ud
 
 

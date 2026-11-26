@@ -8,6 +8,9 @@
     ugeplan-mcp telegram [timer] lytter efter jeres svar (standard 24 timer). "OK UGE-xxxx" fylder kurven
     ugeplan-mcp telegram-par    ny kode til at koble en telefon på
     ugeplan-mcp telegram-frakobl kobler alle telefoner fra
+    ugeplan-mcp ha-opsaet [ADRESSE]
+                               gemmer et langtidstoken til Home Assistant fra udklipsholderen,
+                               så lytteren kan styre bilen (standard: http://192.168.128.2:8123)
     ugeplan-mcp garmin-opsaet MAPPE [VENV]
                                lytteren henter dagens træningsniveau fra garmin-mcp i MAPPE
     ugeplan-mcp http-noegle     laver en ny adgangsnøgle til HTTP-tilstand (vises kun én gang)
@@ -75,6 +78,32 @@ async def _telegram_opsaet(fra_udklipsholder: bool = False) -> int:
     print(f"\nBotten {navn} er gemt i styresystemets nøglering.")
     print(f"3. Start lytteren: ugeplan-mcp telegram")
     print(f"4. Søg {navn} frem i Telegram på begge telefoner og send koden {kode} (gyldig i 30 minutter).")
+    return 0
+
+
+async def _ha_opsaet(adresse: str | None = None) -> int:
+    """Token fra udklipsholderen (vises aldrig), gemt i nøgleringen og tjekket mod Home Assistant."""
+    from handle_mcp import ha
+
+    fund = ha.TOKEN_FORMAT.findall(_udklipsholder())
+    if len(fund) != 1:
+        print("Udklipsholderen indeholder ikke ét token fra Home Assistant. Intet er gemt.")
+        print("Lav et i Home Assistant: dit navn nederst til venstre → Sikkerhed → Langtidsadgangstokens → Opret token, kopiér det og kør igen.")
+        return 1
+    gammel = None
+    try:
+        gammel = ha.hent_token()
+    except ha.HAFejl:
+        pass
+    try:
+        ha.gem(fund[0], adresse)
+        s = await ha.status()
+    except ha.HAFejl as fejl:
+        ha.gem(gammel) if gammel else ha.slet()
+        print(f"Det virkede ikke, og det gamle token er beholdt: {fejl}" if gammel else f"Det virkede ikke: {fejl}")
+        return 1
+    print(f"Home Assistant på {ha.url()} er gemt ({len(fund[0])} tegn i nøgleringen). Status lige nu:\n{s.tekst()}")
+    print("Genstart lytteren (luk og åbn Claude-appen), og skriv 'bil' til botten.")
     return 0
 
 
@@ -341,6 +370,8 @@ def kommando(args: list[str]) -> int:
 
             print(f"{telegram.frakobl_alle()} telefoner er koblet fra. Kør telegram-par for at koble på igen.")
             return 0
+        case ["ha-opsaet", *adresse] if len(adresse) <= 1:
+            return asyncio.run(_ha_opsaet(adresse[0] if adresse else None))
         case ["garmin-opsaet", mappe, *venv] if len(venv) <= 1:
             from handle_mcp import traening
 

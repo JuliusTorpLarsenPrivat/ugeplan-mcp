@@ -83,6 +83,10 @@ Skriv til botten, når noget kommer i huset, også midt i ugen. Botten opdaterer
 
 Mens en madplan er i gang, går beskederne til AI'en i stedet.
 
+### Bilen fra telefonen (Home Assistant)
+
+Har I Home Assistant med EV Smart Charging, klarer botten også bilen uden AI: *"bil"* (status), *"klar 7"* (klar næste morgen, kun denne gang), *"klar normal"*, *"oplad nu"* og *"stop opladning"*. Opsætning: [docs/MAC.md](docs/MAC.md) trin 9.
+
 ## Kom i gang
 
 Du skal bruge en AI-app med MCP (se *Virker med*), [uv](https://docs.astral.sh/uv/getting-started/installation/) og [Git](https://git-scm.com/downloads). Testet på Windows. Mac og Linux burde virke.

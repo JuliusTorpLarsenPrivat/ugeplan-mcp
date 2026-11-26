@@ -8,13 +8,17 @@ sendes, tjekker vagten to ting:
 2. At stien ikke indeholder ord for bestilling, betaling eller ændring af levering.
    ugeplan-mcp må kun læse og ændre antal i kurven. Mennesket betaler altid selv.
 
+Undtagelse: jeres egen Home Assistant på hjemmenettet, kun til bilen (se HA_STIER og ha.py).
+
 Vagten er bevidst dum og streng: hellere et kald for meget afvist end et for lidt.
 """
 
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import logging
+import re
 
 import httpx
 
@@ -55,10 +59,38 @@ class VagtFejl(Exception):
     """Et kald, vagten ikke vil sende."""
 
 
+# Jeres egen Home Assistant (ha.py): kun på hjemmenettet, kun den adresse, der er sat op, og kun
+# disse stier. Hvilke enheder der må læses og trykkes, tjekker ha.py.
+HA_STIER = re.compile(r"^/api/(?:states/[a-z_]+\.[a-z0-9_]+|services/(?:input_datetime/set_datetime|button/press))$")
+
+
+def _lokal_vaert(vaert: str) -> bool:
+    if vaert.endswith(".local"):
+        return True
+    try:
+        ip = ipaddress.ip_address(vaert)
+    except ValueError:
+        return False
+    return ip.is_private or ip.is_loopback
+
+
+def _ha_vaert() -> str | None:
+    from handle_mcp import ha  # sent: ha.py bruger selv vagten
+
+    try:
+        return ha.vaert()
+    except Exception:  # noqa: BLE001  i tvivl: ingen Home Assistant
+        return None
+
+
 def tjek_url(url: httpx.URL) -> None:
     vaert = url.host
     if vaert == "queue-it.net" or vaert.endswith(".queue-it.net"):
         raise VagtFejl("Butikken har kø på hjemmesiden lige nu (queue-it). Prøv igen om lidt.")
+    if vaert not in TILLADTE_VAERTER and _lokal_vaert(vaert) and vaert == _ha_vaert():
+        if not HA_STIER.match(url.path):
+            raise VagtFejl(f"Afvist: {url.path} i Home Assistant er ikke tilladt.")
+        return
     if vaert not in TILLADTE_VAERTER:
         raise VagtFejl(f"Afvist: {vaert} er ikke en kendt butiksadresse.")
     sti = url.path.lower()

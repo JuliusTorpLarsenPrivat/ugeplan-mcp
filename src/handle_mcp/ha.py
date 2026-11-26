@@ -5,8 +5,9 @@ og det andet data". Home Assistant styrer laderen via OCPP og EV Smart Charging.
 fem ting, og kun på de enheder, der står nedenfor:
 
   - status: læser klar-tid, planlagt opladning, batteri, elpris og laderen
-  - klar-tid: sætter engangstiden `input_datetime.bilen_skal_vaere_klar_kl` (00:00 = fast tid).
-    Automatiseringen i Home Assistant sætter selv EV Smart Chargings sluttid ud fra den.
+  - klar-tid: sætter engangstiden `input_datetime.bilen_skal_vaere_klar_kl` og slår
+    `input_boolean.undtagelse_i_nat` til (eller fra for ugedagens faste tid). Automatiseringen i
+    Home Assistant sætter selv EV Smart Chargings sluttid ud fra dem og slår undtagelsen fra kl. 12.
   - oplad nu / stop: trykker på EV Smart Chargings knapper for manuel start og stop
 
 Intet andet i Home Assistant kan ændres herfra (se også vagt.py, der kun tillader netop disse
@@ -36,6 +37,7 @@ STANDARD_URL = "http://192.168.128.2:8123"  # Mac mini'ens interne kort til VM'e
 TIMEOUT_SEK = 15
 
 KLAR = "input_datetime.bilen_skal_vaere_klar_kl"
+UNDTAGELSE = "input_boolean.undtagelse_i_nat"
 FASTE = tuple(f"input_datetime.bil_klar_{d}" for d in ("mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lordag", "sondag"))
 SLUTTID = "select.ev_smart_charging_charge_completion_time"
 LADNING = "sensor.ev_smart_charging_charging"
@@ -46,7 +48,7 @@ LADER = "sensor.lader_status_connector"
 START = "button.ev_smart_charging_manually_start_charging"
 STOP = "button.ev_smart_charging_manually_stop_charging"
 
-LAESER = (KLAR, *FASTE, SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER)
+LAESER = (KLAR, UNDTAGELSE, *FASTE, SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER)
 KNAPPER = (START, STOP)
 
 _transport: httpx.AsyncBaseTransport | None = None  # kun til test
@@ -218,9 +220,9 @@ async def status(nu: datetime | None = None) -> Status:
     nu = nu or datetime.now(TIDSZONE)
     dag = naeste_morgen(nu)
     fast = FASTE[dag.weekday()]
-    navne = await asyncio.gather(*(tilstand(e) for e in (KLAR, fast, SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER)))
-    klar, fast_t, slut, ladning, tilkoblet, batteri, elpris, lader = navne
-    undtagelse = klar.get("state") not in ("00:00:00", "unknown", "unavailable", None)
+    navne = await asyncio.gather(*(tilstand(e) for e in (KLAR, UNDTAGELSE, fast, SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER)))
+    klar, undt, fast_t, slut, ladning, tilkoblet, batteri, elpris, lader = navne
+    undtagelse = undt.get("state") == "on" and klar.get("state") not in ("unknown", "unavailable", None)
     tid = klar["state"] if undtagelse else fast_t.get("state", "06:15:00")
     attr = ladning.get("attributes") or {}
     return Status(
@@ -242,8 +244,12 @@ async def status(nu: datetime | None = None) -> Status:
 async def saet_klar(tid: time | None, nu: datetime | None = None) -> str:
     """Engangstid til næste morgen, eller None for den faste tid. Giver svaret til husstanden."""
     nu = nu or datetime.now(TIDSZONE)
-    vaerdi = "00:00:00" if tid is None else f"{tid.hour:02d}:{tid.minute:02d}:00"
-    await _kald("POST", "/api/services/input_datetime/set_datetime", {"entity_id": KLAR, "time": vaerdi})
+    if tid is None:
+        await _kald("POST", "/api/services/input_boolean/turn_off", {"entity_id": UNDTAGELSE})
+    else:
+        vaerdi = f"{tid.hour:02d}:{tid.minute:02d}:00"
+        await _kald("POST", "/api/services/input_datetime/set_datetime", {"entity_id": KLAR, "time": vaerdi})
+        await _kald("POST", "/api/services/input_boolean/turn_on", {"entity_id": UNDTAGELSE})
     s = await status(nu)
     if tid is None:
         svar = f"Undtagelsen er fjernet. Bilen skal være klar kl. {s.klar} (fast tid {s.dag})."

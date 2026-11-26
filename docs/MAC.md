@@ -148,7 +148,7 @@ Sådan virker det:
 
 ## 9. Bilen fra Telegram (Home Assistant)
 
-Kun hvis I har Home Assistant med EV Smart Charging og klar-tiden fra Smarthome-projektet (`input_datetime.bilen_skal_vaere_klar_kl`).
+Kun hvis I har Home Assistant med EV Smart Charging og klar-tiden fra Smarthome-projektet (`input_datetime.bilen_skal_vaere_klar_kl` og `input_boolean.undtagelse_i_nat`).
 
 1. I Home Assistant: klik på dit navn nederst til venstre → **Sikkerhed** → **Langtidsadgangstokens** → **Opret token**. Kald det "ugeplan-lytter", og kopiér det.
 2. I Terminal (tokenet læses fra udklipsholderen og vises ikke):

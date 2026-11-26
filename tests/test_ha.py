@@ -17,7 +17,8 @@ NU = datetime(2026, 11, 26, 20, 0, tzinfo=ha.TIDSZONE)  # torsdag aften: tiderne
 class FalskHA:
     def __init__(self):
         self.tilstande = {
-            ha.KLAR: {"state": "00:00:00"},
+            ha.KLAR: {"state": "07:30:00"},
+            ha.UNDTAGELSE: {"state": "off"},
             "input_datetime.bil_klar_fredag": {"state": "06:15:00"},
             "input_datetime.bil_klar_torsdag": {"state": "06:15:00"},
             ha.SLUTTID: {"state": "06:15"},
@@ -40,6 +41,8 @@ class FalskHA:
             return httpx.Response(200, json={"entity_id": e, "attributes": {}, **self.tilstande[e]})
         if request.url.path == "/api/services/input_datetime/set_datetime":
             self.tilstande[data["entity_id"]]["state"] = data["time"]
+        if request.url.path.startswith("/api/services/input_boolean/"):
+            self.tilstande[data["entity_id"]]["state"] = "on" if request.url.path.endswith("turn_on") else "off"
         return httpx.Response(200, json=[])
 
     def skrivninger(self):
@@ -98,7 +101,7 @@ async def test_status(falsk_ha):
 
 
 async def test_status_med_undtagelse_og_lader_offline(falsk_ha):
-    falsk_ha.tilstande[ha.KLAR]["state"] = "07:30:00"
+    falsk_ha.tilstande[ha.UNDTAGELSE]["state"] = "on"
     falsk_ha.tilstande[ha.LADER]["state"] = "unavailable"
     falsk_ha.tilstande[ha.LADNING] = {"state": "off", "attributes": {"charging_is_planned": False}}
     tekst = (await ha.status(NU)).tekst()
@@ -114,7 +117,10 @@ async def test_status_om_formiddagen_gaelder_i_dag(falsk_ha):
 
 async def test_klar_saetter_engangstiden(falsk_ha):
     svar = await ha.saet_klar(time(7, 10), NU)
-    assert falsk_ha.skrivninger() == [("/api/services/input_datetime/set_datetime", {"entity_id": ha.KLAR, "time": "07:10:00"})]
+    assert falsk_ha.skrivninger() == [
+        ("/api/services/input_datetime/set_datetime", {"entity_id": ha.KLAR, "time": "07:10:00"}),
+        ("/api/services/input_boolean/turn_on", {"entity_id": ha.UNDTAGELSE}),
+    ]
     assert svar.startswith("Bilen skal være klar kl. 07.10 i morgen (kun denne gang).")
     assert "færdig kl. 07.00 (hele kvarter)" in svar
 
@@ -125,9 +131,9 @@ async def test_klar_om_dagen_planlaegges_kl_18(falsk_ha):
 
 
 async def test_klar_normal(falsk_ha):
-    falsk_ha.tilstande[ha.KLAR]["state"] = "07:30:00"
+    falsk_ha.tilstande[ha.UNDTAGELSE]["state"] = "on"
     svar = await ha.saet_klar(None, NU)
-    assert falsk_ha.skrivninger()[0][1]["time"] == "00:00:00"
+    assert falsk_ha.skrivninger() == [("/api/services/input_boolean/turn_off", {"entity_id": ha.UNDTAGELSE})]
     assert svar.startswith("Undtagelsen er fjernet. Bilen skal være klar kl. 06.15 (fast tid fredag).")
 
 
@@ -183,6 +189,7 @@ def test_vagten_tillader_kun_home_assistants_bilstier():
     vagt.tjek_url(httpx.URL("http://192.168.128.2:8123/api/services/button/press"))
     for afvist in (
         "http://192.168.128.2:8123/api/services/lock/unlock",
+        "http://192.168.128.2:8123/api/services/input_boolean/toggle",
         "http://192.168.128.2:8123/api/config",
         "http://192.168.1.50:8123/api/states/sensor.x",  # anden adresse på hjemmenettet
         "http://evil.example.com/api/services/button/press",

@@ -55,6 +55,8 @@ class Handling:
     kun_i_nat: bool = False
     til: bool = True
     grader: int | None = None
+    periode: str | None = None  # forbrug: None = tabellen, ellers ha.forbrug_svar
+    etiket: str = ""
 
 
 def _rens(tekst: str) -> str:
@@ -78,27 +80,75 @@ def _dato(dag: str, maaned: str, aar: str | None, i_dag: date) -> date | None:
         return None
 
 
-# Forbrug: bredt, for ingen kan huske kommandoer (Julius 27/11). Beder beskeden om en bestemt
-# anden periode ("i oktober", "i går", "sidste måned"), kan tabellen ikke svare: så claude -p.
+# Forbrug: bredt, for ingen kan huske kommandoer (Julius 27/11). Uden periode: tabellen. Med en
+# periode, der kan slås sikkert op: én sætning om netop den. Ellers claude -p med samtalen.
+# Fundet 27/11 21.10: "Hvad kostede det at lade i nat" fik hele tabellen.
 FORBRUG_ORD = re.compile(r"\b(?:forbrug\w*|co2|co₂|kwh|strømforbrug\w*|(?:op)?ladet for)\b")
 PRIS_ORD = re.compile(r"\b(?:kost\w*|pris\w*|betal\w*|regning\w*|billig\w*|dyr\w*|udgift\w*)\b")
 LAD_ORD = re.compile(r"\b(?:lad\w*|oplad\w*|bil(?:en|ens)?|elbil\w*|strøm\w*)\b")
 MAANEDER = ("januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december")
-ANDEN_PERIODE = re.compile(r"\b(?:i går|i forgårs|sidste (?:måned|uge|år)|forrige|i fjor|sidste år|\d{4}|\d{1,2}[/.]\d{1,2}|uge \d+)\b")
+CLAUDE = "claude"  # en periode, genvejen ikke kan slå sikkert op
+
+# (mønster, periode, etiket); første, der passer, vinder. Etiket None = sæt selv.
+PERIODER = (
+    (r"\b(?:sidste|seneste|forrige) opladning\b", "sidste", "Ved sidste opladning"),
+    (r"\b(?:seneste|sidste) (?:24 timer|24 t|døgn)\b", "24t", "De seneste 24 timer"),
+    (r"\b(?:seneste|sidste) (?:7|syv) dage\b", "7dage", "De seneste 7 dage"),
+    (r"\b(?:i alt|nogensinde|altid|totalt?)\b", "i_alt", "I alt"),
+    (r"\b(?:i nat|i morges|natten)\b", "nat", None),
+    (r"\bi dag\b", "i_dag", "I dag"),
+    (r"\bi går\b", "i_gaar", "I går"),
+    (r"\b(?:denne|den her|indeværende) måned\b", "maaned", "Denne måned"),
+    (r"\b(?:sidste|forrige) måned\b", "sidste_maaned", "Sidste måned"),
+    (r"\bi år\b", "aar", "I år"),
+    (r"\b(?:sidste år|i fjor|sidste\s+\w+\s+år)\b", "sidste_aar", None),
+    (r"\b(?:uge\w*|weekend\w*|i forgårs|i aftes|i aften|i morgen|i eftermiddag|i formiddag|i weekenden|\d{1,2}[/.]\d{1,2})\b", CLAUDE, None),
+    (r"\bnu\b", "nu", None),
+)
 
 
-def er_forbrug(t: str, i_dag: date) -> bool:
+def forbrug_periode(t: str, nu: datetime) -> tuple[str | None, str] | None:
+    """(periode, etiket) for en forbrugsbesked; (None, "") = ingen periode (tabellen).
+    None = ikke en forbrugsbesked, eller en periode der skal til claude -p."""
     if len(t) > 80 or not (FORBRUG_ORD.search(t) or (PRIS_ORD.search(t) and LAD_ORD.search(t))):
-        return False
-    if ANDEN_PERIODE.search(t):
-        return False
-    return not any(m in t for m in MAANEDER if m != MAANEDER[i_dag.month - 1])
+        return None
+    if m := re.search(r"\b(20\d{2})\b", t):
+        aar = int(m.group(1))
+        if aar < ha.FORBRUG_START.year:
+            return "aeldre", ""
+        if aar != nu.year or not re.search(r"\bi\s+20\d{2}\b", t):
+            return None
+        return "aar", f"I {aar}"
+    for i, navn in enumerate(MAANEDER, start=1):
+        if re.search(rf"\b{navn}\b", t):
+            start = date(nu.year if i <= nu.month else nu.year - 1, i, 1)  # seneste gang, det var den måned
+            if i == nu.month:
+                return "maaned", f"I {navn}"
+            forrige = (nu.date().replace(day=1) - timedelta(days=1)).replace(day=1)
+            if start == forrige:
+                return "sidste_maaned", f"I {navn}"
+            return ("aeldre", "") if start < ha.FORBRUG_START.replace(day=1) else None
+    for moenster, periode, etiket in PERIODER:
+        if re.search(moenster, t):
+            if periode == CLAUDE:
+                return None
+            if periode == "sidste_aar":
+                return ("aeldre", "") if nu.year - 1 < ha.FORBRUG_START.year else None
+            if periode == "nat":
+                if not 6 <= nu.hour < 18:
+                    return None  # om aftenen/natten er "i nat" ikke sikker: claude -p
+                return "nat", "I morges" if "morges" in t else "I nat"
+            return periode, etiket or ""
+    return None, ""
 
 
-def fortolk(tekst: str, i_dag: date | None = None) -> Handling | None:
+def fortolk(tekst: str, i_dag: date | None = None, nu: datetime | None = None) -> Handling | None:
     t = _rens(tekst)
-    if t not in OPLAD and er_forbrug(t, i_dag or datetime.now(ha.TIDSZONE).date()):
-        return Handling("forbrug")
+    nu = nu or (datetime.combine(i_dag, time(12), ha.TIDSZONE) if i_dag else datetime.now(ha.TIDSZONE))
+    i_dag = nu.date()
+    if t not in OPLAD and (FORBRUG_ORD.search(t) or (PRIS_ORD.search(t) and LAD_ORD.search(t))) and len(t) <= 80:
+        fp = forbrug_periode(t, nu)  # None: om forbrug, men ikke sikkert -> claude -p
+        return Handling("forbrug", periode=fp[0], etiket=fp[1]) if fp else None
     if len(t) > 40:
         return None
     for saet, hvad in ((STATUS, "status"), (NORMAL, "klar"), (OPLAD, "oplad"), (STOP, "stop"), (UNDTAGELSER, "undtagelser"), (FORVARM, "forvarm")):
@@ -161,7 +211,9 @@ async def udfoer(h: Handling) -> str:
     """Giver svaret til husstanden. Fejl siges kort, uden detaljer om tokenet."""
     try:
         if h.hvad == "forbrug":
-            return (await ha.forbrug()).tekst()
+            if h.periode is None:
+                return (await ha.forbrug()).tekst()
+            return await ha.forbrug_svar(h.periode, h.etiket)
         if h.hvad == "status":
             return (await ha.status()).tekst()
         if h.hvad == "klar":

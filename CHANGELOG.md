@@ -1,5 +1,15 @@
 # Ændringer
 
+## 0.41.1 (27/11-2026)
+
+Fundet i den rigtige test 27/11 kl. 21.10: *"Hvad kostede det at lade i nat"* fik hele forbrugstabellen.
+
+- **Svar på den periode, der spørges om:** nævner beskeden en periode, svarer botten kun om den, i én kort sætning, fx "I nat er der ladet 12,0 kWh for 24,60 kr. (2,05 kr./kWh), 0,60 kg CO2." Uden periode (*"forbrug"*, *"hvad har opladningen kostet?"*) kommer tabellen som før.
+- Perioder: *i nat*/*i morges* (kl. 6–18: seneste 24 t, eller i dag, hvis den er 0), *i dag*, *i går*, *denne måned*/*i november*, *sidste måned*/*i oktober*, *i år*, *i alt*, *sidste opladning*, *seneste 24 timer*/*7 dage* og *nu* (strømprisen).
+- Kan den ikke slås sikkert op (*"i nat"* om aftenen, *"denne uge"*, *"sidste uge"*, en dato, *"i morgen"*), går beskeden til `claude -p` med samtalen. Perioder før 26/11-2026 får et ærligt "har kun tal fra 26/11-2026".
+- Nye sensorer (kun læsning): `sensor.bil_{kwh,kr,co2}_i_dag`. *I går* og *sidste måned* kommer fra `last_period`, men kun når måleren beviseligt blev nulstillet ved periodens start.
+- `bil_forbrug` giver også `i_gaar` og `sidste_maaned`, og `claude -p` bedes svare kort om netop den spurgte periode. Ingen nye værktøjer.
+
 ## 0.41.0 (27/11-2026)
 
 - **Opladningsforbrug på Telegram:** spørg bare, fx *"hvor meget har vi ladet for i november?"*, *"hvor meget CO2 i år?"* eller *"er det billigt at lade nu?"*. Botten svarer med kWh, kr., kg CO2 og kr./kWh for sidste opladning, seneste 24 t og 7 dage, denne måned, i år og i alt (talt fra 26/11-2026), plus strømprisen og CO2 nu og den billigste kommende time.

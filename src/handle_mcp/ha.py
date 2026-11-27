@@ -73,12 +73,14 @@ ELPRIS_CO2 = "sensor.energi_data_service_co2"  # g/kWh nu
 FORBRUG = (
     ("Sidste opladning", "sensor.lader_energy_session", "input_number.ladning_sidste_kr", "input_number.ladning_sidste_co2"),
     ("Seneste 24 t", "sensor.bil_kwh_seneste_24_t", "sensor.bil_kr_seneste_24_t", "sensor.bil_co2_seneste_24_t"),
+    ("I dag", "sensor.bil_kwh_i_dag", "sensor.bil_kr_i_dag", "sensor.bil_co2_i_dag"),  # nulstilles 00.00; last_period = i går
     ("Seneste 7 dage", "sensor.bil_kwh_seneste_7_dage", "sensor.bil_kr_seneste_7_dage", "sensor.bil_co2_seneste_7_dage"),
     ("Denne måned", "sensor.bil_kwh_denne_maned", "sensor.bil_kr_denne_maned", "sensor.bil_co2_denne_maned"),
     ("I år", "sensor.bil_kwh_i_ar", "sensor.bil_kr_i_ar", "sensor.bil_co2_i_ar"),
     ("I alt", "input_number.ladning_kwh_i_alt", "input_number.ladning_kr_i_alt", "input_number.ladning_co2_i_alt"),
 )
 FORBRUG_FRA = "26/11-2026"
+FORBRUG_START = date(2026, 11, 26)
 
 LAESER = (
     *FASTE, SLUTTID, LADNING, SAT_TIL, BATTERI, ELPRIS, LADER,
@@ -543,6 +545,16 @@ class Forbrug:
     co2_nu: float | None  # g/kWh nu
     billigst: tuple[str, float] | None  # ("03.00", 2,05): billigste kommende time
     snit: float | None  # gennemsnit af de kommende timer, der kendes
+    i_gaar: Periode | None = None  # last_period af i-dag-sensorerne, hvis de blev nulstillet kl. 00.00
+    sidste_maaned: Periode | None = None  # last_period af måneds-sensorerne, hvis nulstillet d. 1.
+
+    def periode(self, navn: str) -> Periode | None:
+        return next((p for p in self.perioder if p.navn == navn), None)
+
+    def vurdering(self) -> str | None:
+        if self.elpris is None or self.snit is None:
+            return None
+        return "billigt" if self.elpris <= self.snit * 0.9 else "dyrt" if self.elpris >= self.snit * 1.1 else "middel"
 
     def __post_init__(self) -> None:
         self.kr_pr_kwh = {p.navn: p.kr_pr_kwh for p in self.perioder}
@@ -554,9 +566,8 @@ class Forbrug:
             if self.co2_nu is not None:
                 nu += f", {self.co2_nu:.0f} g CO2/kWh"
             linjer += ["", nu + "."]
-            if self.billigst and self.snit is not None:
+            if self.billigst and (vurdering := self.vurdering()):
                 tid, pris = self.billigst
-                vurdering = "billigt" if self.elpris <= self.snit * 0.9 else "dyrt" if self.elpris >= self.snit * 1.1 else "middel"
                 linjer.append(f"Det er {vurdering} lige nu. Billigste kommende time: kl. {tid} ({_komma(pris, 2)} kr./kWh); snit {_komma(self.snit, 2)}.")
         return "\n".join(linjer)
 
@@ -580,6 +591,11 @@ async def forbrug(nu: datetime | None = None) -> Forbrug:
     *vaerdier, pris, co2 = await asyncio.gather(*(tilstand(e) for e in (*enheder, ELPRIS, ELPRIS_CO2)))
     tal = [_tal(v.get("state")) for v in vaerdier]
     perioder = [Periode(navn, *tal[i * 3 : i * 3 + 3]) for i, (navn, *_) in enumerate(FORBRUG)]
+    attr = {e: v.get("attributes") or {} for e, v in zip(enheder, vaerdier, strict=True)}
+    midnat = datetime.combine(nu.date(), time(0), TIDSZONE)
+    den_1 = midnat.replace(day=1)
+    i_gaar = _forrige("I går", [e for n, *t in FORBRUG if n == "I dag" for e in t], attr, midnat)
+    sidste_maaned = _forrige("Sidste måned", [e for n, *t in FORBRUG if n == "Denne måned" for e in t], attr, den_1)
     kommende = _kommende(pris.get("attributes") or {}, nu)
     billigst = min(kommende, key=lambda x: x[1]) if kommende else None
     return Forbrug(
@@ -588,7 +604,84 @@ async def forbrug(nu: datetime | None = None) -> Forbrug:
         co2_nu=_tal(co2.get("state")),
         billigst=(billigst[0].strftime("%H.%M"), billigst[1]) if billigst else None,
         snit=sum(p for _, p in kommende) / len(kommende) if kommende else None,
+        i_gaar=i_gaar,
+        sidste_maaned=sidste_maaned,
     )
+
+
+def _forrige(navn: str, enheder: list[str], attr: dict[str, dict], graense: datetime) -> Periode | None:
+    """last_period, men kun hvis måleren blev nulstillet netop ved `graense` (ellers dækker den
+    ikke hele perioden, fx første døgn efter oprettelsen)."""
+    tal = []
+    for e in enheder:
+        a = attr.get(e, {})
+        try:
+            nulstillet = datetime.fromisoformat(str(a.get("last_reset"))).astimezone(TIDSZONE)
+        except ValueError:
+            return None
+        if abs((nulstillet - graense).total_seconds()) > 120:
+            return None
+        tal.append(_tal(a.get("last_period")))
+    return Periode(navn, *tal)
+
+
+# Perioder, som en besked kan spørge om (ha_besked.forbrug_periode), og hvordan de slås op.
+NAVNE = {
+    "sidste": "Sidste opladning", "24t": "Seneste 24 t", "7dage": "Seneste 7 dage", "i_dag": "I dag",
+    "maaned": "Denne måned", "aar": "I år", "i_alt": "I alt",
+}  # fmt: skip
+
+
+def _saetning(etiket: str, p: Periode | None) -> str:
+    if p is None or p.kwh is None:
+        return f"Jeg kan ikke se forbruget for {etiket.lower()} lige nu."
+    if p.kwh == 0:
+        return f"{etiket} er der ikke ladet."
+    dele = f"{_komma(p.kwh, 1)} kWh"
+    if p.kr is not None:
+        dele += f" for {_komma(p.kr, 2)} kr."
+        if (k := p.kr_pr_kwh) is not None:
+            dele += f" ({_komma(k, 2)} kr./kWh)"
+    if p.co2 is not None:
+        dele += f", {_komma(p.co2, 2)} kg CO2"
+    return f"{etiket} er der ladet {dele}."
+
+
+AELDRE = f"Jeg har kun tal for opladningen fra {FORBRUG_FRA}, så den periode kan jeg ikke svare på."
+
+
+async def forbrug_svar(periode: str, etiket: str, nu: datetime | None = None) -> str:
+    """Én kort sætning om én periode. `periode` fra ha_besked.forbrug_periode."""
+    nu = nu or datetime.now(TIDSZONE)
+    if periode == "aeldre":
+        return AELDRE
+    f = await forbrug(nu)
+    if periode == "nu":
+        if f.elpris is None:
+            return "Jeg kan ikke se strømprisen lige nu."
+        svar = f"Strøm nu: {_komma(f.elpris, 2)} kr./kWh"
+        if v := f.vurdering():
+            svar += f", det er {v}"
+        if f.billigst:
+            svar += f". Billigste kommende time er kl. {f.billigst[0]} ({_komma(f.billigst[1], 2)} kr./kWh)"
+        return svar + "."
+    if periode == "nat":  # "i nat"/"i morges", kun kl. 6-18: seneste 24 t, ellers i dag
+        p = f.periode("Seneste 24 t")
+        if p is None or not p.kwh:
+            p = f.periode("I dag")
+        return _saetning(etiket, p)
+    if periode == "i_gaar":
+        return _saetning(etiket, f.i_gaar) if f.i_gaar else (AELDRE if nu.date() - timedelta(days=1) < FORBRUG_START else _ukendt(etiket))
+    if periode == "sidste_maaned":
+        if f.sidste_maaned:
+            return _saetning(etiket, f.sidste_maaned)
+        forrige = (nu.date().replace(day=1) - timedelta(days=1)).replace(day=1)
+        return AELDRE if forrige < FORBRUG_START.replace(day=1) else _ukendt(etiket)
+    return _saetning(etiket, f.periode(NAVNE[periode]))
+
+
+def _ukendt(etiket: str) -> str:
+    return f"Home Assistant har ikke et sikkert tal for {etiket.lower()}. Spørg fx om denne måned eller de seneste 7 dage."
 
 
 async def oplad(start: bool) -> str:

@@ -571,7 +571,8 @@ async def bil_forvarmning(automatisk: bool | None = None, under_grader: int | No
 @vaerktoej(LOKAL_LAESER)
 async def bil_forbrug() -> Any:
     """Bilens opladningsforbrug (talt fra 26/11-2026): kWh, kr., kg CO2 og kr./kWh for sidste
-    opladning, seneste 24 t, seneste 7 dage, denne måned, i år og i alt. Desuden strømprisen nu
+    opladning, seneste 24 t, i dag (fra kl. 00), seneste 7 dage, denne måned, i år og i alt, samt
+    `i_gaar` og `sidste_maaned` (null, hvis Home Assistant ikke har et sikkert tal). Desuden strømprisen nu
     (kr./kWh), CO2 nu (g/kWh), billigste kommende time og snittet af de kommende timer. Til
     spørgsmål om pris, kWh og CO2 for opladning, og om det er billigt at lade nu. `tekst` er et
     færdigt svar."""
@@ -579,7 +580,10 @@ async def bil_forbrug() -> Any:
         f = await ha.forbrug()
     except ha.HAFejl as fejl:
         raise ToolError(str(fejl)) from None
-    return {"perioder": [{**p.__dict__, "kr_pr_kwh": p.kr_pr_kwh} for p in f.perioder], "elpris_nu": f.elpris, "co2_nu_g_pr_kwh": f.co2_nu,
+    def ud(p: Any) -> Any:
+        return {**p.__dict__, "kr_pr_kwh": p.kr_pr_kwh} if p else None
+
+    return {"perioder": [ud(p) for p in f.perioder], "i_gaar": ud(f.i_gaar), "sidste_maaned": ud(f.sidste_maaned), "elpris_nu": f.elpris, "co2_nu_g_pr_kwh": f.co2_nu,
             "billigste_time": f.billigst, "snit_kommende": f.snit, "tekst": f.tekst()}  # fmt: skip
 
 

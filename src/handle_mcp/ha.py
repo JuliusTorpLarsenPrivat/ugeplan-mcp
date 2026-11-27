@@ -51,7 +51,10 @@ TIMEOUT_SEK = 15
 FASTE = tuple(f"input_datetime.bil_klar_{d}" for d in ("mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lordag", "sondag"))
 SLUTTID = "select.ev_smart_charging_charge_completion_time"
 LADNING = "sensor.ev_smart_charging_charging"
-TILKOBLET = "switch.ev_smart_charging_ev_connected"
+# Én fælles kilde (Julius 27/11: "lidt træls at tro den ikke sidder i laderen hvis den sidder i
+# laderen"): laderens live-status først, BMW's stik kun som reserve, når data er friske. Brug aldrig
+# EV Smart Chargings switch (en indstilling) eller BMW's stik direkte.
+SAT_TIL = "binary_sensor.bil_sat_til_laderen"
 BATTERI = "sensor.i3s_120_battery_ev_displayed_state_of_charge"
 ELPRIS = "sensor.energi_data_service"
 LADER = "sensor.lader_status_connector"
@@ -65,10 +68,22 @@ FORVARM_NU = "input_boolean.forvarm_bilen_nu"
 AUTO_FORVARM = "input_boolean.automatisk_forvarmning"
 FORVARM_UNDER = "input_number.forvarm_under"
 UDE = "sensor.stue_stue_outside_temperature"
+ELPRIS_CO2 = "sensor.energi_data_service_co2"  # g/kWh nu
+# Opladningsforbrug (Julius 27/11-2026), talt fra 26/11-2026: (navn, kWh, kr., kg CO2)
+FORBRUG = (
+    ("Sidste opladning", "sensor.lader_energy_session", "input_number.ladning_sidste_kr", "input_number.ladning_sidste_co2"),
+    ("Seneste 24 t", "sensor.bil_kwh_seneste_24_t", "sensor.bil_kr_seneste_24_t", "sensor.bil_co2_seneste_24_t"),
+    ("Seneste 7 dage", "sensor.bil_kwh_seneste_7_dage", "sensor.bil_kr_seneste_7_dage", "sensor.bil_co2_seneste_7_dage"),
+    ("Denne måned", "sensor.bil_kwh_denne_maned", "sensor.bil_kr_denne_maned", "sensor.bil_co2_denne_maned"),
+    ("I år", "sensor.bil_kwh_i_ar", "sensor.bil_kr_i_ar", "sensor.bil_co2_i_ar"),
+    ("I alt", "input_number.ladning_kwh_i_alt", "input_number.ladning_kr_i_alt", "input_number.ladning_co2_i_alt"),
+)
+FORBRUG_FRA = "26/11-2026"
 
 LAESER = (
-    *FASTE, SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER,
+    *FASTE, SLUTTID, LADNING, SAT_TIL, BATTERI, ELPRIS, LADER,
     LAD_STANDARD, MAAL_I_NAT, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE,
+    ELPRIS_CO2, *(e for _, *enheder in FORBRUG for e in enheder),
 )  # fmt: skip
 KNAPPER = (START, STOP)
 # Det eneste, der kan ændres herfra: service -> de enheder, den må bruges på. Se også vagt.HA_STIER.
@@ -311,7 +326,7 @@ class Status:
     start: str | None
     stop: str | None
     lader_nu: bool
-    tilkoblet: bool | None
+    tilkoblet: bool | None  # binary_sensor.bil_sat_til_laderen; None = ved ikke
     batteri: float | None
     elpris: float | None
     lader: str  # laderens egen status, fx "Available" eller "unavailable"
@@ -338,10 +353,13 @@ class Status:
             linjer.append(f"Batteri: {self.batteri:.0f} %.")
         if self.elpris is not None:
             linjer.append(f"Strøm nu: {self.elpris:.2f} kr./kWh".replace(".", ",", 1) + ".")
-        if self.lader in ("unavailable", "unknown"):
-            linjer.append("Laderen svarer ikke Home Assistant lige nu.")
-        elif self.tilkoblet is False:
-            linjer.append("Bilen er ikke sat til.")
+        lader_nede = self.lader in ("unavailable", "unknown")
+        if self.tilkoblet is None:
+            linjer.append("Ved ikke, om bilen er sat til (laderen svarer ikke).")
+        elif self.tilkoblet:
+            linjer.append("Bilen er sat til laderen." + (" Laderen svarer dog ikke Home Assistant lige nu." if lader_nede else ""))
+        else:
+            linjer.append("Bilen er ikke sat til." + (" Laderen svarer dog ikke Home Assistant lige nu." if lader_nede else ""))
         ude = f" (ude nu {self.ude:.0f} °C)" if self.ude is not None else ""
         if self.auto_forvarm and self.forvarm_under is not None:
             linjer.append(f"Forvarmning: automatisk under {self.forvarm_under:.0f} °C{ude}.")
@@ -355,7 +373,7 @@ class Status:
 async def status(nu: datetime | None = None) -> Status:
     nu = nu or datetime.now(TIDSZONE)
     dag = naeste_morgen(nu)
-    enheder = (FASTE[dag.weekday()], SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER, MAAL_I_NAT, LAD_STANDARD, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE)
+    enheder = (FASTE[dag.weekday()], SLUTTID, LADNING, SAT_TIL, BATTERI, ELPRIS, LADER, MAAL_I_NAT, LAD_STANDARD, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE)
     *navne, begivenheder = await asyncio.gather(*(tilstand(e) for e in enheder), _begivenheder(dag, dag + timedelta(days=1)))
     fast_t, slut, ladning, tilkoblet, batteri, elpris, lader, maal, standard, kommende, auto, under, ude = navne
     b = _paa_dato(begivenheder, dag)
@@ -487,6 +505,90 @@ async def forvarm_under(grader: int) -> str:
         raise HAFejl(f"Grænsen skal være mellem {FORVARM_MIN} og {FORVARM_MAX} °C.")
     await _service("input_number/set_value", FORVARM_UNDER, value=grader)
     return f"Bilen forvarmes automatisk, når det er under {grader} °C."
+
+
+# --- opladningsforbrug (kun læsning) ---------------------------------------------------------
+
+
+def _komma(v: float, dec: int) -> str:
+    return f"{v:,.{dec}f}".replace(",", " ").replace(".", ",")
+
+
+@dataclass
+class Periode:
+    navn: str
+    kwh: float | None
+    kr: float | None
+    co2: float | None  # kg
+
+    @property
+    def kr_pr_kwh(self) -> float | None:
+        return self.kr / self.kwh if self.kr is not None and self.kwh else None
+
+    def linje(self) -> str:
+        dele = [
+            f"{_komma(self.kwh, 1)} kWh" if self.kwh is not None else "? kWh",
+            f"{_komma(self.kr, 2)} kr." if self.kr is not None else "? kr.",
+            f"{_komma(self.co2, 2)} kg CO2" if self.co2 is not None else "? kg CO2",
+        ]
+        if (p := self.kr_pr_kwh) is not None:
+            dele.append(f"{_komma(p, 2)} kr./kWh")
+        return f"{self.navn}: " + " · ".join(dele)
+
+
+@dataclass
+class Forbrug:
+    perioder: list[Periode]
+    elpris: float | None  # kr./kWh nu
+    co2_nu: float | None  # g/kWh nu
+    billigst: tuple[str, float] | None  # ("03.00", 2,05): billigste kommende time
+    snit: float | None  # gennemsnit af de kommende timer, der kendes
+
+    def __post_init__(self) -> None:
+        self.kr_pr_kwh = {p.navn: p.kr_pr_kwh for p in self.perioder}
+
+    def tekst(self) -> str:
+        linjer = [f"Opladning (talt fra {FORBRUG_FRA}):"] + [p.linje() for p in self.perioder]
+        if self.elpris is not None:
+            nu = f"Strøm nu: {_komma(self.elpris, 2)} kr./kWh"
+            if self.co2_nu is not None:
+                nu += f", {self.co2_nu:.0f} g CO2/kWh"
+            linjer += ["", nu + "."]
+            if self.billigst and self.snit is not None:
+                tid, pris = self.billigst
+                vurdering = "billigt" if self.elpris <= self.snit * 0.9 else "dyrt" if self.elpris >= self.snit * 1.1 else "middel"
+                linjer.append(f"Det er {vurdering} lige nu. Billigste kommende time: kl. {tid} ({_komma(pris, 2)} kr./kWh); snit {_komma(self.snit, 2)}.")
+        return "\n".join(linjer)
+
+
+def _kommende(attr: dict, nu: datetime) -> list[tuple[datetime, float]]:
+    ud = []
+    for t in list(attr.get("raw_today") or []) + list(attr.get("raw_tomorrow") or []):
+        try:
+            tid, pris = datetime.fromisoformat(str(t["hour"])).astimezone(TIDSZONE), float(t["price"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if tid + timedelta(hours=1) > nu:
+            ud.append((tid, pris))
+    return ud
+
+
+async def forbrug(nu: datetime | None = None) -> Forbrug:
+    """Opladningens kWh, kr. og CO2 pr. periode, og strømmen nu og de kommende timer."""
+    nu = nu or datetime.now(TIDSZONE)
+    enheder = [e for _, *tre in FORBRUG for e in tre]
+    *vaerdier, pris, co2 = await asyncio.gather(*(tilstand(e) for e in (*enheder, ELPRIS, ELPRIS_CO2)))
+    tal = [_tal(v.get("state")) for v in vaerdier]
+    perioder = [Periode(navn, *tal[i * 3 : i * 3 + 3]) for i, (navn, *_) in enumerate(FORBRUG)]
+    kommende = _kommende(pris.get("attributes") or {}, nu)
+    billigst = min(kommende, key=lambda x: x[1]) if kommende else None
+    return Forbrug(
+        perioder=perioder,
+        elpris=_tal(pris.get("state")),
+        co2_nu=_tal(co2.get("state")),
+        billigst=(billigst[0].strftime("%H.%M"), billigst[1]) if billigst else None,
+        snit=sum(p for _, p in kommende) / len(kommende) if kommende else None,
+    )
 
 
 async def oplad(start: bool) -> str:

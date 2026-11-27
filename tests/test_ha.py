@@ -27,7 +27,7 @@ class FalskHA:
             "input_datetime.bil_klar_torsdag": {"state": "06:15:00"},
             ha.SLUTTID: {"state": "06:15"},
             ha.LADNING: {"state": "off", "attributes": {"charging_is_planned": True, "charging_start_time": "2026-11-27T03:00:00+01:00", "charging_stop_time": "2026-11-27T06:00:00+01:00"}},
-            ha.TILKOBLET: {"state": "on"},
+            ha.SAT_TIL: {"state": "on"},
             ha.BATTERI: {"state": "44.6"},
             ha.ELPRIS: {"state": "4.0483"},
             ha.LADER: {"state": "Available"},
@@ -140,6 +140,7 @@ async def test_status(falsk_ha):
         "Opladning planlagt 03.00–06.00.\n"
         "Batteri: 45 %.\n"
         "Strøm nu: 4,05 kr./kWh.\n"
+        "Bilen er sat til laderen.\n"
         "Forvarmning: automatisk under 7 °C (ude nu 2 °C)."
     )
     assert falsk_ha.skrivninger() == []  # status læser kun
@@ -156,7 +157,8 @@ async def test_status_med_undtagelse_og_lader_offline(falsk_ha):
     assert "klar kl. 05.30 (undtagelse, kun denne gang)" in tekst
     assert "Mål i nat: 100 % (standard 80 %)." in tekst
     assert "Planlagt: fre 27/11 05:30 100%" in tekst
-    assert "Ingen opladning planlagt." in tekst and "Laderen svarer ikke" in tekst
+    assert "Ingen opladning planlagt." in tekst
+    assert "Bilen er sat til laderen. Laderen svarer dog ikke Home Assistant lige nu." in tekst  # BMW-reserven siger sat til
 
 
 async def test_status_kl_5_gaelder_i_dag(falsk_ha):
@@ -495,3 +497,38 @@ async def test_bilvaerktoejerne_i_serveren(falsk_ha, monkeypatch):
     assert "under 3 °C" in (await server.bil_forvarmning(automatisk=True, under_grader=3))["svar"]
     with pytest.raises(Exception):
         await server.bil_planlaeg("5/12", "05:30")
+
+
+# --- sat til laderen: én fælles kilde (v0.41.0) -------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "sat_til, lader, linje",
+    [
+        ("on", "Charging", "Bilen er sat til laderen."),
+        ("off", "Available", "Bilen er ikke sat til."),
+        ("unavailable", "unavailable", "Ved ikke, om bilen er sat til (laderen svarer ikke)."),
+        ("unknown", "Available", "Ved ikke, om bilen er sat til (laderen svarer ikke)."),
+        ("on", "unavailable", "Bilen er sat til laderen. Laderen svarer dog ikke Home Assistant lige nu."),
+    ],
+)
+async def test_sat_til_laderen(falsk_ha, sat_til, lader, linje):
+    falsk_ha.tilstande[ha.SAT_TIL]["state"] = sat_til
+    falsk_ha.tilstande[ha.LADER]["state"] = lader
+    tekst = (await ha.status(NU)).tekst()
+    assert linje in tekst.splitlines()
+    if sat_til != "off":
+        assert "ikke sat til." not in tekst  # aldrig "ikke sat til", når den sidder i eller vi ikke ved det
+
+
+async def test_sat_til_kommer_kun_fra_den_faelles_kilde(falsk_ha):
+    falsk_ha.tilstande["switch.ev_smart_charging_ev_connected"] = {"state": "off"}  # en indstilling, ikke en måling
+    falsk_ha.tilstande["sensor.i3s_120_charging_port_plug_state"] = {"state": "DISCONNECTED"}
+    assert "Bilen er sat til laderen." in (await ha.status(NU)).tekst()
+    laest = {s.rsplit("/", 1)[-1] for _, s, _ in falsk_ha.kald}
+    assert ha.SAT_TIL in laest
+    assert not laest & {"switch.ev_smart_charging_ev_connected", "sensor.i3s_120_charging_port_plug_state"}
+    for e in ("switch.ev_smart_charging_ev_connected", "sensor.i3s_120_charging_port_plug_state"):
+        assert e not in ha.LAESER
+        with pytest.raises(ha.HAFejl):
+            await ha.tilstand(e)

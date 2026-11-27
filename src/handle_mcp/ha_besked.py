@@ -47,7 +47,7 @@ FORVARM_UNDER = re.compile(r"^(?:automatisk\s+)?forvarm(?:ning)?\s+under\s+(-?\d
 @dataclass
 class Handling:
     # "status", "klar", "planlaeg", "undtagelser", "lad", "forvarm", "auto_forvarm",
-    # "forvarm_under", "oplad" eller "stop"
+    # "forvarm_under", "oplad", "stop" eller "forbrug"
     hvad: str
     tid: time | None = None
     pct: int | None = None
@@ -78,8 +78,27 @@ def _dato(dag: str, maaned: str, aar: str | None, i_dag: date) -> date | None:
         return None
 
 
+# Forbrug: bredt, for ingen kan huske kommandoer (Julius 27/11). Beder beskeden om en bestemt
+# anden periode ("i oktober", "i går", "sidste måned"), kan tabellen ikke svare: så claude -p.
+FORBRUG_ORD = re.compile(r"\b(?:forbrug\w*|co2|co₂|kwh|strømforbrug\w*|(?:op)?ladet for)\b")
+PRIS_ORD = re.compile(r"\b(?:kost\w*|pris\w*|betal\w*|regning\w*|billig\w*|dyr\w*|udgift\w*)\b")
+LAD_ORD = re.compile(r"\b(?:lad\w*|oplad\w*|bil(?:en|ens)?|elbil\w*|strøm\w*)\b")
+MAANEDER = ("januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december")
+ANDEN_PERIODE = re.compile(r"\b(?:i går|i forgårs|sidste (?:måned|uge|år)|forrige|i fjor|sidste år|\d{4}|\d{1,2}[/.]\d{1,2}|uge \d+)\b")
+
+
+def er_forbrug(t: str, i_dag: date) -> bool:
+    if len(t) > 80 or not (FORBRUG_ORD.search(t) or (PRIS_ORD.search(t) and LAD_ORD.search(t))):
+        return False
+    if ANDEN_PERIODE.search(t):
+        return False
+    return not any(m in t for m in MAANEDER if m != MAANEDER[i_dag.month - 1])
+
+
 def fortolk(tekst: str, i_dag: date | None = None) -> Handling | None:
     t = _rens(tekst)
+    if t not in OPLAD and er_forbrug(t, i_dag or datetime.now(ha.TIDSZONE).date()):
+        return Handling("forbrug")
     if len(t) > 40:
         return None
     for saet, hvad in ((STATUS, "status"), (NORMAL, "klar"), (OPLAD, "oplad"), (STOP, "stop"), (UNDTAGELSER, "undtagelser"), (FORVARM, "forvarm")):
@@ -113,7 +132,7 @@ def fortolk(tekst: str, i_dag: date | None = None) -> Handling | None:
 
 BIL_ORD = re.compile(
     r"\b(?:undtagelse\w*|bil(?:en|ens)?|opladning\w*|oplad\w*|lade\w*|lader\w*|ladning\w*|afgang\w*"
-    r"|kalender\w*|forvarm\w*|klar(?:-?tid\w*)?|batteri\w*|elbil\w*)\b"
+    r"|kalender\w*|forvarm\w*|klar(?:-?tid\w*)?|batteri\w*|elbil\w*|forbrug\w*|co2|kwh|elpris\w*)\b"
 )
 TVETYDIG = re.compile(r"\b(?:den|det|dem|igen|i stedet|ja|nej|ok|okay|hellere|alligevel|også)\b")
 SAMTALE_MIN = 30  # så længe efter en snak om bilen gælder den som emnet
@@ -141,6 +160,8 @@ def om_bilen(tekst: str, historik: list[dict], nu: datetime | None = None) -> bo
 async def udfoer(h: Handling) -> str:
     """Giver svaret til husstanden. Fejl siges kort, uden detaljer om tokenet."""
     try:
+        if h.hvad == "forbrug":
+            return (await ha.forbrug()).tekst()
         if h.hvad == "status":
             return (await ha.status()).tekst()
         if h.hvad == "klar":

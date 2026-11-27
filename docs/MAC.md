@@ -170,6 +170,7 @@ Skriv til botten:
 - *"undtagelser"*: de næste planlagte undtagelser
 - *"forvarm nu"*: klimaanlægget nu (slukker selv). *"forvarmning til"*/*"fra"*, *"forvarm under 5"*: automatikken
 - *"oplad nu"*, *"stop opladning"*: laderen kan være et minut om at reagere
+- Spørg om forbruget med almindelige ord, fx *"hvad har opladningen kostet?"*, *"hvor meget CO2 i år?"* eller *"er det billigt at lade nu?"*: kWh, kr., CO2 og kr./kWh pr. periode (fra 26/11-2026) og strømprisen nu
 
 Fri tekst ("hvad koster strømmen i aften?") besvares af `claude -p` med Home Assistant (kun læsning). Den må også styre bilen med de samme ting, men intet andet. Fjern adgangen igen ved at slette tokenet i Home Assistant.
 

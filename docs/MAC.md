@@ -148,7 +148,7 @@ Sådan virker det:
 
 ## 9. Bilen fra Telegram (Home Assistant)
 
-Kun hvis I har Home Assistant med EV Smart Charging og klar-tiden fra Smarthome-projektet (`input_datetime.bilen_skal_vaere_klar_kl` og `input_boolean.undtagelse_i_nat`).
+Kun hvis I har Home Assistant med EV Smart Charging og bil-hjælperne fra Smarthome-projektet (klar-tid, `input_boolean.undtagelse_i_nat`, ladeniveau, kalenderen `calendar.bil_afgang` og forvarmning).
 
 1. I Home Assistant: klik på dit navn nederst til venstre → **Sikkerhed** → **Langtidsadgangstokens** → **Opret token**. Kald det "ugeplan-lytter", og kopiér det.
 2. I Terminal (tokenet læses fra udklipsholderen og vises ikke):
@@ -162,12 +162,16 @@ Kører Home Assistant et andet sted end i VM'en på denne Mac, så skriv adresse
 3. Kommandoen viser bilens status. Genstart Claude-appen, så lytteren og de nye værktøjer kommer med.
 
 Skriv til botten:
-- *"bil"*: klar-tid, planlagt opladning, batteri og elpris
-- *"klar 7"*, *"klar 07:30"*: bilen skal være klar næste morgen, kun denne gang (rundes ned til kvarter; sat om dagen planlægges det kl. 18)
+- *"bil"*: klar-tid, mål i nat, planlagt opladning, batteri, elpris, forvarmning og planlagte undtagelser
+- *"klar 7"*, *"klar 07:30"*, *"klar 7 100%"*: bilen skal være klar næste morgen, kun denne gang, evt. ladet til en bestemt % (rundes ned til kvarter; sat om dagen planlægges det kl. 18)
 - *"klar normal"*: tilbage til ugedagens faste tid
+- *"lad til 90"*: ladeniveau hver nat (50–100 %). *"lad til 100 i nat"*: kun i nat
+- *"klar 5/12 5:30 100%"*: planlagt undtagelse en bestemt dag (% kan udelades). Én pr. dag; slet eller ret den på dashboardet
+- *"undtagelser"*: de næste planlagte undtagelser
+- *"forvarm nu"*: klimaanlægget nu (slukker selv). *"forvarmning til"*/*"fra"*, *"forvarm under 5"*: automatikken
 - *"oplad nu"*, *"stop opladning"*: laderen kan være et minut om at reagere
 
-Fri tekst ("hvad koster strømmen i aften?") besvares af `claude -p` med Home Assistant (kun læsning). Den må også styre bilen med de samme fem ting, men intet andet. Fjern adgangen igen ved at slette tokenet i Home Assistant.
+Fri tekst ("hvad koster strømmen i aften?") besvares af `claude -p` med Home Assistant (kun læsning). Den må også styre bilen med de samme ting, men intet andet. Fjern adgangen igen ved at slette tokenet i Home Assistant.
 
 ## Tjekliste til første døgn
 

@@ -1,12 +1,14 @@
 # Ændringer
 
-## 0.40.0 (26/11-2026)
+## 0.40.0 (27/11-2026)
 
 - **Bilen fra Telegram:** har I Home Assistant med EV Smart Charging, kan en koblet telefon skrive *"bil"* (klar-tid, planlagt opladning, batteri, elpris), *"klar 7"* eller *"klar 07:30"* (bilen skal være klar næste morgen, kun denne gang), *"klar normal"* (tilbage til fast tid), *"oplad nu"* og *"stop opladning"*. Botten klarer det selv, uden AI, og svarer med det samme.
-- `claude -p` kan nu også svare på spørgsmål om huset ud fra Home Assistant (kun læsning) og styre bilen med de samme fem handlinger (nye værktøjer `bil_status`, `bil_klar`, `bil_oplad`). Intet andet i Home Assistant kan ændres.
+- `claude -p` kan nu også svare på spørgsmål om huset ud fra Home Assistant (kun læsning) og styre bilen med de samme handlinger (nye værktøjer `bil_status`, `bil_klar`, `bil_oplad` m.fl.). Intet andet i Home Assistant kan ændres.
 - Sæt op med `ugeplan-mcp ha-opsaet`: læser et langtidstoken fra udklipsholderen, gemmer det i nøgleringen og tjekker det. Se [docs/MAC.md](docs/MAC.md) trin 9.
-- Vagten tillader kun jeres egen Home Assistant på hjemmenettet, kun den adresse, der er sat op, og kun læsning af tilstande, tryk på knapper og klar-tiden. Et tryk på "oplad nu" sendes aldrig to gange.
-- Kræver én genstart af Claude-appen (tre nye værktøjer).
+- Vagten tillader kun jeres egen Home Assistant på hjemmenettet, kun den adresse, der er sat op, og kun læsning af tilstande, tryk på knapper, klar-tiden og undtagelsen. Et tryk på "oplad nu" sendes aldrig to gange.
+- **Ladeniveau, planlagte undtagelser og forvarmning:** *"klar 7 100%"* (klar-tid med ladeniveau), *"lad til 90"* (hver nat) og *"lad til 100 i nat"*, *"klar 5/12 5:30 100%"* (planlagt undtagelse en bestemt dag; lægges i kalenderen "Bil afgang", slet den på dashboardet), *"undtagelser"* (de næste), *"forvarm nu"*, *"forvarmning til/fra"* og *"forvarm under 5"*. *"bil"* viser nu også mål i nat, forvarmning, udetemperatur og planlagte undtagelser. Nye værktøjer til `claude -p`: `bil_lad_til`, `bil_planlaeg`, `bil_forvarm`, `bil_forvarmning`.
+- Vagten tillader derudover kun `input_number/set_value`, `calendar/create_event` og læsning af kalendere, og `ha.SKRIV` bestemmer præcis hvilke enheder hver service må bruges på.
+- Kræver én genstart af Claude-appen (syv nye værktøjer).
 
 ## 0.39.0 (25/11-2026)
 

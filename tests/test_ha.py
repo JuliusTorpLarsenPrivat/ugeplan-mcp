@@ -27,7 +27,16 @@ class FalskHA:
             ha.BATTERI: {"state": "44.6"},
             ha.ELPRIS: {"state": "4.0483"},
             ha.LADER: {"state": "Available"},
+            ha.LAD_STANDARD: {"state": "80.0"},
+            ha.LAD_I_NAT: {"state": "100.0"},
+            ha.MAAL_I_NAT: {"state": "80.0"},
+            ha.KOMMENDE: {"state": "Ingen planlagte undtagelser"},
+            ha.AUTO_FORVARM: {"state": "on"},
+            ha.FORVARM_NU: {"state": "off"},
+            ha.FORVARM_UNDER: {"state": "7.0"},
+            ha.UDE: {"state": "2"},
         }
+        self.begivenheder: list[dict] = []
         self.kald: list[tuple[str, str, dict | None]] = []
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
@@ -39,6 +48,13 @@ class FalskHA:
             if e not in self.tilstande:
                 return httpx.Response(404, json={"message": "Entity not found."})
             return httpx.Response(200, json={"entity_id": e, "attributes": {}, **self.tilstande[e]})
+        if request.url.path == f"/api/calendars/{ha.KALENDER}":
+            fra, til = request.url.params["start"][:10], request.url.params["end"][:10]
+            return httpx.Response(200, json=[b for b in self.begivenheder if fra <= b["start"]["date"] < til])
+        if request.url.path == "/api/services/calendar/create_event":
+            self.begivenheder.append({"summary": data["summary"], "start": {"date": data["start_date"]}, "end": {"date": data["end_date"]}})
+        if request.url.path == "/api/services/input_number/set_value":
+            self.tilstande[data["entity_id"]]["state"] = f"{float(data['value'])}"
         if request.url.path == "/api/services/input_datetime/set_datetime":
             self.tilstande[data["entity_id"]]["state"] = data["time"]
         if request.url.path.startswith("/api/services/input_boolean/"):
@@ -93,9 +109,11 @@ async def test_status(falsk_ha):
     s = await ha.status(NU)
     assert s.tekst() == (
         "Bilen skal være klar kl. 06.15 (fast tid fredag).\n"
+        "Mål i nat: 80 %.\n"
         "Opladning planlagt 03.00–06.00.\n"
         "Batteri: 45 %.\n"
-        "Strøm nu: 4,05 kr./kWh."
+        "Strøm nu: 4,05 kr./kWh.\n"
+        "Forvarmning: automatisk under 7 °C (ude nu 2 °C)."
     )
     assert falsk_ha.skrivninger() == []  # status læser kun
 
@@ -121,7 +139,7 @@ async def test_klar_saetter_engangstiden(falsk_ha):
         ("/api/services/input_datetime/set_datetime", {"entity_id": ha.KLAR, "time": "07:10:00"}),
         ("/api/services/input_boolean/turn_on", {"entity_id": ha.UNDTAGELSE}),
     ]
-    assert svar.startswith("Bilen skal være klar kl. 07.10 i morgen (kun denne gang).")
+    assert svar.startswith("Bilen skal være klar kl. 07.10 i morgen, ladet til 100 % (kun denne gang).")
     assert "færdig kl. 07.00 (hele kvarter)" in svar
 
 
@@ -243,7 +261,7 @@ def test_claude_p_faar_bilen_og_ha_kun_laesning(monkeypatch, tmp_path):
     konfig = claude_p.mcp_konfig()
     assert "homeassistant" in konfig["mcpServers"]
     tilladt = claude_p.tilladte_vaerktoejer(konfig)
-    assert {"mcp__ugeplan__bil_status", "mcp__ugeplan__bil_klar", "mcp__ugeplan__bil_oplad", "mcp__homeassistant__ha_get_state"} <= set(tilladt)
+    assert {f"mcp__ugeplan__{v}" for v in claude_p.UGEPLAN_BIL} | {"mcp__homeassistant__ha_get_state"} <= set(tilladt)
     assert not [t for t in tilladt if t.startswith("mcp__homeassistant__") and t.removeprefix("mcp__homeassistant__") not in claude_p.HA_LAES]
     assert "mcp__homeassistant" not in tilladt  # aldrig hele serveren (ha_call_service)
 
@@ -257,3 +275,188 @@ async def test_bilvaerktoejerne_findes_i_serveren(falsk_ha):
     navne = {t.name for t in await server.mcp.list_tools()}
     assert set(claude_p.UGEPLAN_BIL) <= navne
     assert (await server.bil_klar("07:30"))["svar"].startswith("Bilen skal være klar kl. 07.30")
+
+
+# --- udvidelsen 27/11: ladeniveau, planlagte undtagelser og forvarmning ---------------------
+
+I_DAG = NU.date()
+
+
+@pytest.mark.parametrize(
+    "tekst, forventet",
+    [
+        ("klar 07:30 90%", ha_besked.Handling("klar", tid=time(7, 30), pct=90)),
+        ("klar 7.30", ha_besked.Handling("klar", tid=time(7, 30))),
+        ("klar 5/12 5:30 100%", ha_besked.Handling("planlaeg", tid=time(5, 30), pct=100, dato=datetime(2026, 12, 5).date())),
+        ("Undtagelse 24.12 6", ha_besked.Handling("planlaeg", tid=time(6, 0), dato=datetime(2026, 12, 24).date())),
+        ("klar 5/1 7", ha_besked.Handling("planlaeg", tid=time(7, 0), dato=datetime(2027, 1, 5).date())),
+        ("undtagelser", ha_besked.Handling("undtagelser")),
+        ("lad til 90", ha_besked.Handling("lad", pct=90)),
+        ("Lad til 100% i nat", ha_besked.Handling("lad", pct=100, kun_i_nat=True)),
+        ("forvarm nu", ha_besked.Handling("forvarm")),
+        ("forvarmning fra", ha_besked.Handling("auto_forvarm", til=False)),
+        ("automatisk forvarmning til", ha_besked.Handling("auto_forvarm", til=True)),
+        ("forvarm under -3 grader", ha_besked.Handling("forvarm_under", grader=-3)),
+    ],
+)
+def test_nye_faste_kommandoer(tekst, forventet):
+    assert ha_besked.fortolk(tekst, I_DAG) == forventet
+
+
+@pytest.mark.parametrize("tekst", ["klar 31/2 7", "lad til", "forvarm bilen i morgen tidlig", "varm maden op"])
+def test_nye_kommandoer_er_strenge(tekst):
+    assert ha_besked.fortolk(tekst, I_DAG) is None
+
+
+async def test_klar_med_procent(falsk_ha):
+    svar = await ha.saet_klar(time(7, 30), NU, pct=90)
+    assert falsk_ha.skrivninger() == [
+        ("/api/services/input_datetime/set_datetime", {"entity_id": ha.KLAR, "time": "07:30:00"}),
+        ("/api/services/input_number/set_value", {"entity_id": ha.LAD_I_NAT, "value": 90}),
+        ("/api/services/input_boolean/turn_on", {"entity_id": ha.UNDTAGELSE}),
+    ]
+    assert svar.startswith("Bilen skal være klar kl. 07.30 i morgen, ladet til 90 % (kun denne gang).")
+
+
+@pytest.mark.parametrize("pct", [40, 101])
+async def test_ladeniveau_uden_for_graenserne_skrives_ikke(falsk_ha, pct):
+    with pytest.raises(ha.HAFejl):
+        await ha.lad_til(pct)
+    assert falsk_ha.skrivninger() == []
+
+
+async def test_lad_til_hver_nat(falsk_ha):
+    svar = await ha.lad_til(92, nu=NU)  # rundes til trin på 5
+    assert falsk_ha.skrivninger() == [("/api/services/input_number/set_value", {"entity_id": ha.LAD_STANDARD, "value": 90})]
+    assert svar.startswith("Bilen lades nu til 90 % hver nat")
+
+
+async def test_lad_til_i_nat_bruger_den_tid_der_gaelder(falsk_ha):
+    svar = await ha.lad_til(100, kun_i_nat=True, nu=NU)
+    assert falsk_ha.skrivninger() == [
+        ("/api/services/input_datetime/set_datetime", {"entity_id": ha.KLAR, "time": "06:15:00"}),  # fast tid fredag
+        ("/api/services/input_number/set_value", {"entity_id": ha.LAD_I_NAT, "value": 100}),
+        ("/api/services/input_boolean/turn_on", {"entity_id": ha.UNDTAGELSE}),
+    ]
+    assert "klar kl. 06.15 i morgen, ladet til 100 %" in svar
+
+
+async def test_lad_til_i_nat_med_undtagelse_beholder_tiden(falsk_ha):
+    falsk_ha.tilstande[ha.UNDTAGELSE]["state"] = "on"
+    svar = await ha.lad_til(85, kun_i_nat=True, nu=NU)
+    assert [s for s, _ in falsk_ha.skrivninger()] == ["/api/services/input_number/set_value", "/api/services/input_boolean/turn_on"]
+    assert "85 % i nat og skal være klar kl. 07.30" in svar
+
+
+async def test_planlaeg_laegger_heldagsbegivenhed(falsk_ha):
+    svar = await ha.planlaeg(datetime(2026, 12, 5).date(), time(5, 30), 100, NU)
+    assert falsk_ha.skrivninger() == [
+        ("/api/services/calendar/create_event", {"entity_id": ha.KALENDER, "summary": "05:30 100%", "start_date": "2026-12-05", "end_date": "2026-12-06"})
+    ]
+    assert svar.startswith("Planlagt: lørdag 5/12 skal bilen være klar kl. 05.30, ladet til 100 %.")
+
+
+async def test_planlaeg_uden_procent(falsk_ha):
+    await ha.planlaeg(datetime(2026, 12, 5).date(), time(6, 0), None, NU)
+    assert falsk_ha.skrivninger()[0][1]["summary"] == "06:00"
+
+
+async def test_planlaeg_samme_dag_to_gange_afvises(falsk_ha):
+    falsk_ha.begivenheder.append({"summary": "06:00 90%", "start": {"date": "2026-12-05"}, "end": {"date": "2026-12-06"}})
+    svar = await ha_besked.udfoer(ha_besked.Handling("planlaeg", tid=time(5, 30), dato=datetime(2026, 12, 5).date()))
+    assert "allerede en undtagelse lørdag 5/12 (06:00 90%)" in svar and "dashboardet" in svar
+    assert falsk_ha.skrivninger() == []
+
+
+async def test_planlaeg_i_fortiden_afvises(falsk_ha):
+    with pytest.raises(ha.HAFejl):
+        await ha.planlaeg(datetime(2026, 11, 20).date(), time(6, 0), None, NU)
+    assert falsk_ha.skrivninger() == []
+
+
+async def test_planlaeg_naeste_morgen_er_klar_tid(falsk_ha):
+    await ha.planlaeg(datetime(2026, 11, 27).date(), time(5, 30), None, NU)  # torsdag aften -> fredag
+    assert [s for s, _ in falsk_ha.skrivninger()] == ["/api/services/input_datetime/set_datetime", "/api/services/input_boolean/turn_on"]
+    assert falsk_ha.begivenheder == []
+
+
+async def test_status_viser_planlagt_undtagelse_fra_kalenderen(falsk_ha):
+    falsk_ha.begivenheder.append({"summary": "05:30 100%", "start": {"date": "2026-11-27"}, "end": {"date": "2026-11-28"}})
+    falsk_ha.tilstande[ha.MAAL_I_NAT]["state"] = "100.0"
+    falsk_ha.tilstande[ha.KOMMENDE]["state"] = "fre 27/11 05:30 100%"
+    tekst = (await ha.status(NU)).tekst()
+    assert "klar kl. 05.30 (planlagt undtagelse)" in tekst
+    assert "Mål i nat: 100 % (standard 80 %)." in tekst
+    assert "Planlagt: fre 27/11 05:30 100%" in tekst
+
+
+async def test_undtagelser(falsk_ha):
+    assert (await ha.undtagelser()).startswith("Ingen planlagte undtagelser.")
+    falsk_ha.tilstande[ha.KOMMENDE]["state"] = "lør 5/12 05:30 100%"
+    assert await ha.undtagelser() == "Planlagte undtagelser: lør 5/12 05:30 100%"
+
+
+async def test_forvarmning(falsk_ha):
+    assert "slukker selv" in await ha.forvarm()
+    assert "slået fra" in await ha.auto_forvarmning(False)
+    assert "under 5 °C" in await ha.forvarm_under(5)
+    assert falsk_ha.skrivninger() == [
+        ("/api/services/input_boolean/turn_on", {"entity_id": ha.FORVARM_NU}),
+        ("/api/services/input_boolean/turn_off", {"entity_id": ha.AUTO_FORVARM}),
+        ("/api/services/input_number/set_value", {"entity_id": ha.FORVARM_UNDER, "value": 5}),
+    ]
+    with pytest.raises(ha.HAFejl):
+        await ha.forvarm_under(30)
+
+
+async def test_kun_de_tilladte_services_paa_de_tilladte_enheder(falsk_ha):
+    for service, entitet in (
+        ("input_boolean/turn_off", ha.FORVARM_NU),  # Mac-scriptet slukker selv
+        ("input_number/set_value", ha.MAAL_I_NAT),  # skrives kun af automatiseringen
+        ("input_boolean/turn_on", "input_boolean.noget_andet"),
+        ("calendar/create_event", "calendar.familie"),
+        ("lock/unlock", "lock.hoveddoer"),
+    ):
+        with pytest.raises(ha.HAFejl):
+            await ha._service(service, entitet)
+    assert falsk_ha.kald == []
+
+
+def test_vagten_tillader_de_nye_stier():
+    for ok in (
+        "http://192.168.128.2:8123/api/services/input_number/set_value",
+        "http://192.168.128.2:8123/api/services/calendar/create_event",
+        f"http://192.168.128.2:8123/api/calendars/{ha.KALENDER}?start=2026-12-05T00:00:00",
+    ):
+        vagt.tjek_url(httpx.URL(ok))
+    for afvist in (
+        "http://192.168.128.2:8123/api/services/calendar/delete_event",
+        "http://192.168.128.2:8123/api/services/script/turn_on",
+        "http://192.168.128.2:8123/api/services/input_number/increment",
+    ):
+        with pytest.raises(vagt.VagtFejl):
+            vagt.tjek_url(httpx.URL(afvist))
+
+
+async def test_nye_kommandoer_fra_telegram(tg, falsk_ha):
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    tg.besked(1, "lad til 90", navn="Julius")
+    assert (await telegram.hent_og_haandter(0))[-1] == "bil (lad) fra Julius"
+    assert "90 % hver nat" in tg.sendt[-1][1]
+    tg.besked(1, "forvarm nu", navn="Julius")
+    await telegram.hent_og_haandter(0)
+    assert falsk_ha.skrivninger()[-1] == ("/api/services/input_boolean/turn_on", {"entity_id": ha.FORVARM_NU})
+
+
+async def test_nye_bilvaerktoejer_i_serveren(falsk_ha, monkeypatch):
+    monkeypatch.setattr(ha, "datetime", type("D", (datetime,), {"now": staticmethod(lambda tz=None: NU)}))
+    navne = {t.name for t in await server.mcp.list_tools()}
+    assert set(claude_p.UGEPLAN_BIL) <= navne
+    assert "ladet til 90 %" in (await server.bil_klar("07:30", 90))["svar"]
+    assert "hver nat" in (await server.bil_lad_til(85))["svar"]
+    assert (await server.bil_planlaeg("2026-12-05", "05:30", 100))["svar"].startswith("Planlagt: lørdag 5/12")
+    assert "slukker selv" in (await server.bil_forvarm())["svar"]
+    assert "under 3 °C" in (await server.bil_forvarmning(automatisk=True, under_grader=3))["svar"]
+    with pytest.raises(Exception):
+        await server.bil_planlaeg("5/12", "05:30")

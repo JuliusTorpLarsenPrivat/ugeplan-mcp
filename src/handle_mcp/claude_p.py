@@ -10,7 +10,7 @@ Regler:
   - Højst MAKS_PR_TIME kørsler i timen for hele husstanden. Derefter en kort besked.
   - Kun værktøjer, der læser. Claude kan herfra hverken ændre kurven, planen, profilen eller
     beholdningen, og intet i ugeplan-mcp kan bestille eller betale. Eneste undtagelse er bilen
-    (bil_klar, bil_oplad), når Home Assistant er sat op; resten af Home Assistant kun læsning.
+    (bil_*-værktøjerne), når Home Assistant er sat op; resten af Home Assistant kun læsning.
   - Kører på brugerens eget Claude-abonnement (login i Claude Code). En API-nøgle i miljøet
     fjernes, så der aldrig betales pr. kald ved en fejl.
   - Slås fra med {"fra": true} i claude_p.json i datamappen, eller ved at `claude` ikke findes.
@@ -65,7 +65,7 @@ UGEPLAN_LAES = (
 
 # Bilen (ugeplan-mcp's egne værktøjer, se ha.py): de eneste ændringer i Home Assistant, Claude
 # kan lave herfra. Julius 26/11-2026: claude -p må læse og styre bilen.
-UGEPLAN_BIL = ("bil_status", "bil_klar", "bil_oplad")
+UGEPLAN_BIL = ("bil_status", "bil_klar", "bil_lad_til", "bil_planlaeg", "bil_forvarm", "bil_forvarmning", "bil_oplad")
 
 # Home Assistant-MCP'en (samme som i AI-appen), kun værktøjer der læser. ha_call_service og
 # alle andre skrivende værktøjer gives aldrig.
@@ -76,7 +76,7 @@ SYSTEM = """Du svarer husstanden på Telegram gennem deres madplans-bot. Ingen k
 - Brug værktøjerne til at slå op i madplan, opskrifter, kurv, beholdning, profil, tilbud og Garmin-data, før du svarer. Gæt ikke.
 - Du kan herfra ikke ændre kurven, madplanen, profilen eller beholdningen, og der bestilles og betales aldrig. Beder de om en ændring, så sig kort, hvordan de selv gør: "OK UGE-xxxx" godkender en plan, "har 2 kg kartofler" retter beholdningen, og alt andet kan de bede AI-assistenten i appen om.
 - Garmin-data er helbredsdata: nævn kun de tal, der svarer på spørgsmålet, og stil ingen diagnoser.
-- Bilen (BMW i3s): bil_status viser klar-tid, planlagt opladning, batteri og elpris. bil_klar sætter, hvornår bilen skal være klar næste morgen (kun denne gang), eller tilbage til fast tid. bil_oplad starter eller stopper opladningen nu. Gør kun det, der bliver bedt om, og sig bagefter, hvad der er sat. De faste beskeder virker også uden dig: "bil", "klar 7", "klar normal", "oplad nu", "stop opladning".
+- Bilen (BMW i3s): bil_status viser klar-tid, mål i nat, planlagt opladning, batteri, elpris, forvarmning og planlagte undtagelser. bil_klar sætter, hvornår bilen skal være klar næste morgen (kun denne gang, evt. med %), eller tilbage til fast tid. bil_lad_til sætter ladeniveauet hver nat eller kun i nat. bil_planlaeg lægger en undtagelse en bestemt dato (slet kan kun ske på dashboardet). bil_forvarm starter klimaanlægget nu; bil_forvarmning slår automatikken til/fra og sætter temperaturgrænsen. bil_oplad starter eller stopper opladningen nu. Gør kun det, der bliver bedt om, og sig bagefter, hvad der er sat. De faste beskeder virker også uden dig: "bil", "klar 7", "klar 7 100%", "klar normal", "klar 5/12 5:30 100%", "undtagelser", "lad til 90", "lad til 100 i nat", "forvarm nu", "forvarmning til/fra", "oplad nu", "stop opladning".
 - Home Assistant (homeassistant-værktøjerne) kan du kun læse i, fx elpris, varmepumpe og temperaturer. Andet end bilen kan ikke ændres herfra."""
 
 

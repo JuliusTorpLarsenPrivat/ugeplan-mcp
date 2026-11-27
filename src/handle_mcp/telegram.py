@@ -525,7 +525,7 @@ async def haandter(opdatering: dict) -> str | None:
         await _svar(chat_id, "Der er ingen madplan i kurven lige nu.")
         return f"ingen ugemenu til {navn}"
     if (bil := ha_besked.fortolk(tekst)) and ha.sat_op():
-        # Bilen i Home Assistant, uden AI'en: "bil", "klar 7", "klar normal", "oplad nu", "stop opladning".
+        # Bilen i Home Assistant, uden AI'en: "bil", "klar 7", "lad til 90", "forvarm nu" osv. (ha_besked.py).
         svar = await ha_besked.udfoer(bil)
         _gem_besked(navn, tekst, laest=True)
         await _videresend(chat_id, navn, tekst)

@@ -61,7 +61,11 @@ class VagtFejl(Exception):
 
 # Jeres egen Home Assistant (ha.py): kun på hjemmenettet, kun den adresse, der er sat op, og kun
 # disse stier. Hvilke enheder der må læses og trykkes, tjekker ha.py.
-HA_STIER = re.compile(r"^/api/(?:states/[a-z_]+\.[a-z0-9_]+|services/(?:input_datetime/set_datetime|input_boolean/turn_on|input_boolean/turn_off|button/press))$")
+HA_STIER = re.compile(
+    r"^/api/(?:states/[a-z_]+\.[a-z0-9_]+|calendars/calendar\.[a-z0-9_]+"
+    r"|services/(?:input_datetime/set_datetime|input_boolean/turn_on|input_boolean/turn_off"
+    r"|input_number/set_value|calendar/create_event|button/press))$"
+)  # hvilke enheder hver service må bruges på, står i ha.SKRIV
 
 
 def _lokal_vaert(vaert: str) -> bool:

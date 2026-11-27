@@ -532,7 +532,10 @@ async def haandter(opdatering: dict) -> str | None:
         await _svar(chat_id, svar)
         _gem_besked("handle-botten", f"Svar til {navn}: {svar}", laest=True)
         return f"bil ({bil.hvad}) fra {navn}"
-    if not plan_i_gang() and (handling := beholdning_besked.fortolk(tekst)):
+    # Om bilen, men ikke en sikker kommando ("slet undtagelsen igen", "slet den igen" efter en snak
+    # om bilen): aldrig beholdningen. claude -p forstår den ud fra de seneste beskeder.
+    bil_samtale = ha.sat_op() and ha_besked.om_bilen(tekst, laes("beskeder").get("beskeder", []))
+    if not bil_samtale and not plan_i_gang() and (handling := beholdning_besked.fortolk(tekst)):
         # Uden AI'en: "har 2 kg kartofler", "skudt et rådyr, ligger i fryseren", "fortryd".
         # Mens en plan er i gang, er "vi har …" et svar til AI'en og bliver ikke rørt her.
         svar = beholdning_besked.udfoer(handling)
@@ -542,6 +545,8 @@ async def haandter(opdatering: dict) -> str | None:
         for modtager in chats():
             await _svar(modtager, svar)
         return f"beholdning ændret af {navn}"
+    if bil_samtale:
+        log.info("besked fra %s handler om bilen: til claude -p med samtalen", navn)
     husket = False
     if profil.er_huskeoenske(tekst):
         # Gemmes i profilen her, uden Claude: så er ønsket med i alle kommende madplaner, også

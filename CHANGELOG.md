@@ -1,5 +1,14 @@
 # Ændringer
 
+## 0.40.1 (27/11-2026)
+
+Fundet i den første rigtige test af bilen på Telegram.
+
+- *"Slet undtagelsen igen"*, *"slet undtagelsen i morgen"* og *"fjern undtagelsen"* fjerner nu næste morgens undtagelse (som *"klar normal"*). Før tog beholdningen dem ("Fandt ikke: undtagelsen igen.").
+- **Botten forstår sammenhængen:** nævner en besked bilen (undtagelse, opladning, afgang, kalender …) uden at være en sikker fast kommando, eller er den kort og tvetydig (*"slet den igen"*, *"nej, kl. 9 i stedet"*) lige efter en snak om bilen, går den aldrig til beholdningen, men til `claude -p` med de seneste 10 beskeder. Samme værktøjer som før: kun bil_* og de læsende Home Assistant-værktøjer.
+- Svar fra `claude -p` startede med "Svar til Julius: Svar til Julius:". Nu står det højst én gang i loggen og aldrig i selve svaret.
+- Ingen nye værktøjer: ingen genstart af Claude-appen nødvendig.
+
 ## 0.40.0 (27/11-2026)
 
 - **Bilen fra Telegram:** har I Home Assistant med EV Smart Charging, kan en koblet telefon skrive *"bil"* (klar-tid, planlagt opladning, batteri, elpris), *"klar 7"* eller *"klar 07:30"* (bilen skal være klar næste morgen, kun denne gang), *"klar normal"* (tilbage til fast tid), *"oplad nu"* og *"stop opladning"*. Botten klarer det selv, uden AI, og svarer med det samme.

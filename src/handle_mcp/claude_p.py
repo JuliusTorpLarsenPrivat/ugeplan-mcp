@@ -22,6 +22,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import shutil
 import sys
 import time
@@ -36,7 +37,8 @@ FIL = "claude_p"
 MAKS_PR_TIME = 20
 TIMEOUT_SEK = 240
 HEADLESS_ENV = "UGEPLAN_HEADLESS"  # sat for serverne, som claude -p starter
-HISTORIK = 8  # så mange tidligere beskeder får Claude med som sammenhæng
+HISTORIK = 10  # så mange tidligere beskeder får Claude med som sammenhæng
+SVAR_TIL = re.compile(r"^\s*(?:svar til [^:\n]{1,40}:\s*)+", re.I)  # bottens egne svar gemmes med det præfiks
 
 GRAENSE_TEKST = (
     f"Jeg har svaret på {MAKS_PR_TIME} beskeder den sidste time og holder en pause. "
@@ -77,6 +79,8 @@ SYSTEM = """Du svarer husstanden på Telegram gennem deres madplans-bot. Ingen k
 - Du kan herfra ikke ændre kurven, madplanen, profilen eller beholdningen, og der bestilles og betales aldrig. Beder de om en ændring, så sig kort, hvordan de selv gør: "OK UGE-xxxx" godkender en plan, "har 2 kg kartofler" retter beholdningen, og alt andet kan de bede AI-assistenten i appen om.
 - Garmin-data er helbredsdata: nævn kun de tal, der svarer på spørgsmålet, og stil ingen diagnoser.
 - Bilen (BMW i3s): bil_status viser klar-tid, mål i nat, planlagt opladning, batteri, elpris, forvarmning og planlagte undtagelser. bil_klar sætter, hvornår bilen skal være klar næste morgen (kun denne gang, evt. med %), eller "normal" for tilbage til fast tid (fx "i morgen først kl 8" = bil_klar("08:00")). bil_lad_til sætter ladeniveauet hver nat eller kun i nat. bil_planlaeg lægger en undtagelse en bestemt dato. Én undtagelse pr. dag; en ny erstatter den gamle. bil_forvarm starter klimaanlægget nu; bil_forvarmning slår automatikken til/fra og sætter temperaturgrænsen. bil_oplad starter eller stopper opladningen nu. Gør kun det, der bliver bedt om, og sig bagefter, hvad der er sat. De faste beskeder virker også uden dig: "bil", "klar 7", "klar 7 100%", "klar normal", "klar 5/12 5:30 100%", "undtagelser", "lad til 90", "lad til 100 i nat", "forvarm nu", "forvarmning til/fra", "oplad nu", "stop opladning".
+- Læs de seneste beskeder: korte beskeder som "slet den igen", "nej, kl. 9 i stedet" eller "ja" handler om det, der lige er skrevet om. Handler det om bilen, så gør det med bil_*-værktøjerne (fx "slet undtagelsen igen" = bil_klar("normal")). Er det stadig uklart, så spørg kort i dit svar i stedet for at gætte.
+- Start ikke svaret med "Svar til …": skriv bare svaret.
 - Home Assistant (homeassistant-værktøjerne) kan du kun læse i, fx elpris, varmepumpe og temperaturer. Andet end bilen kan ikke ændres herfra."""
 
 
@@ -185,8 +189,18 @@ def _miljoe() -> dict[str, str]:
     return env
 
 
+def _linje(b: dict) -> str:
+    """'[20.36] Julius: …' og bottens svar uden 'Svar til Julius:', så Claude ikke efterligner det."""
+    tid = str(b.get("tid", ""))[11:16].replace(":", ".")
+    fra, tekst = str(b.get("fra", "?")), str(b.get("tekst", ""))
+    if m := SVAR_TIL.match(tekst):
+        modtager = m.group(0).strip().rstrip(":")[len("svar til ") :].strip()
+        fra, tekst = f"{fra} (til {modtager})", tekst[m.end() :]
+    return f"[{tid}] {fra}: {tekst}" if tid else f"{fra}: {tekst}"
+
+
 def lav_prompt(navn: str, tekst: str, historik: list[dict], nu: str) -> str:
-    linjer = [f"{b.get('fra', '?')}: {b.get('tekst', '')}" for b in historik[-HISTORIK:]]
+    linjer = [_linje(b) for b in historik[-HISTORIK:]]
     tidligere = "\n".join(linjer) if linjer else "(ingen)"
     return f"Nu: {nu}\n\nDe seneste beskeder i chatten:\n{tidligere}\n\nNy besked fra {navn}:\n{tekst}"
 
@@ -232,4 +246,4 @@ async def besvar(navn: str, tekst: str, historik: list[dict], nu: str) -> str | 
     if kode or not isinstance(svar, dict) or svar.get("is_error") or not str(svar.get("result", "")).strip():
         log.warning("claude -p fejlede (kode %s, %s)", kode, svar.get("subtype") if isinstance(svar, dict) else "?")
         return None
-    return str(svar["result"]).strip()
+    return SVAR_TIL.sub("", str(svar["result"])).strip() or None

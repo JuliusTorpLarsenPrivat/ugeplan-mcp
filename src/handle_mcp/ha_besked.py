@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 
 from handle_mcp import ha
 
@@ -31,6 +31,10 @@ UNDTAGELSER = {"undtagelser", "planlagte undtagelser", "kommende undtagelser", "
 FORVARM = {"forvarm", "forvarm nu", "forvarm bilen", "forvarm bilen nu", "varm bilen op", "varm bilen op nu"}
 AUTO_TIL = {"forvarmning til", "automatisk forvarmning til", "slå forvarmning til", "slå automatisk forvarmning til"}
 AUTO_FRA = {"forvarmning fra", "automatisk forvarmning fra", "slå forvarmning fra", "slå automatisk forvarmning fra"}
+
+# "slet undtagelsen", "fjern undtagelsen igen", "slet undtagelsen i morgen": helt sikkert bilen
+# (fundet 27/11: beholdningens "slet …" tog dem). Med en dato er det ikke sikkert -> claude -p.
+SLET_UNDTAGELSE = re.compile(r"^(?:slet|fjern)\s+(?:den\s+|min\s+)?undtagelse(?:n)?(?:\s+(?:igen|i\s+morgen|i\s+nat|til\s+i\s+morgen))*$")
 
 _TID = r"(?:kl\.?\s*)?(\d{1,2})(?:[.:](\d{2}))?"
 _PCT = r"(?:\s+(?:lad(?:et)?\s+(?:op\s+)?til\s+)?(\d{2,3})\s*%)?"
@@ -81,6 +85,8 @@ def fortolk(tekst: str, i_dag: date | None = None) -> Handling | None:
     for saet, hvad in ((STATUS, "status"), (NORMAL, "klar"), (OPLAD, "oplad"), (STOP, "stop"), (UNDTAGELSER, "undtagelser"), (FORVARM, "forvarm")):
         if t in saet:
             return Handling(hvad)
+    if SLET_UNDTAGELSE.match(t):
+        return Handling("klar")
     if t in AUTO_TIL or t in AUTO_FRA:
         return Handling("auto_forvarm", til=t in AUTO_TIL)
     if m := DATO.match(t):
@@ -97,6 +103,39 @@ def fortolk(tekst: str, i_dag: date | None = None) -> Handling | None:
     if m := FORVARM_UNDER.match(t):
         return Handling("forvarm_under", grader=int(m.group(1)))
     return None
+
+
+# --- samtalen: handler en tvetydig besked om bilen? ----------------------------------------
+# Julius 27/11: "et menneske havde alle dage forstået hvad 'slet undtagelsen igen' betød".
+# Faste kommandoer tager kun det, der er helt sikkert. Nævner beskeden bilen, eller er den kort og
+# tvetydig ("slet den igen", "nej, kl. 9 i stedet") lige efter en snak om bilen, går den uden om
+# beholdningen til claude -p, som får de seneste beskeder med.
+
+BIL_ORD = re.compile(
+    r"\b(?:undtagelse\w*|bil(?:en|ens)?|opladning\w*|oplad\w*|lade\w*|lader\w*|ladning\w*|afgang\w*"
+    r"|kalender\w*|forvarm\w*|klar(?:-?tid\w*)?|batteri\w*|elbil\w*)\b"
+)
+TVETYDIG = re.compile(r"\b(?:den|det|dem|igen|i stedet|ja|nej|ok|okay|hellere|alligevel|også)\b")
+SAMTALE_MIN = 30  # så længe efter en snak om bilen gælder den som emnet
+SAMTALE_BESKEDER = 4
+
+
+def om_bilen(tekst: str, historik: list[dict], nu: datetime | None = None) -> bool:
+    """Handler beskeden (sandsynligvis) om bilen, uden at være en sikker fast kommando?"""
+    t = _rens(tekst)
+    if BIL_ORD.search(t):
+        return True
+    if len(t) > 60 or not TVETYDIG.search(t):
+        return False
+    nu = nu or datetime.now(ha.TIDSZONE)
+    for b in historik[-SAMTALE_BESKEDER:]:
+        try:
+            tid = datetime.fromisoformat(str(b.get("tid")))
+        except ValueError:
+            continue
+        if nu - tid <= timedelta(minutes=SAMTALE_MIN) and BIL_ORD.search(str(b.get("tekst", "")).lower()):
+            return True
+    return False
 
 
 async def udfoer(h: Handling) -> str:

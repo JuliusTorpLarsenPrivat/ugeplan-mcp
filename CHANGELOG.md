@@ -5,6 +5,7 @@
 - **Opladningsforbrug på Telegram:** spørg bare, fx *"hvor meget har vi ladet for i november?"*, *"hvor meget CO2 i år?"* eller *"er det billigt at lade nu?"*. Botten svarer med kWh, kr., kg CO2 og kr./kWh for sidste opladning, seneste 24 t og 7 dage, denne måned, i år og i alt (talt fra 26/11-2026), plus strømprisen og CO2 nu og den billigste kommende time.
 - Ingen kommandoer at huske: beskeder om forbrug, CO2, kWh eller pris + opladning besvares med det samme uden AI. Spørges der om en anden periode ("i oktober", "i går", "sidste måned") eller er det uklart, svarer `claude -p` med det nye værktøj `bil_forbrug` (kun læsning) og samtalen.
 - Kun læsning: de nye sensorer kan kun læses herfra.
+- **"Sat til laderen" er robust:** *"bil"* bruger nu den fælles `binary_sensor.bil_sat_til_laderen` (laderens live-status først, BMW's stik kun som frisk reserve) i stedet for EV Smart Chargings switch, der er en indstilling og kunne sige "ikke sat til", selv om bilen sad i. Ved ikke Home Assistant det, står der "Ved ikke, om bilen er sat til (laderen svarer ikke)", aldrig "ikke sat til". Sidder den i, står det også.
 - Kræver én genstart af Claude-appen (ét nyt værktøj).
 
 ## 0.40.1 (27/11-2026)

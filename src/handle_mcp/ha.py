@@ -51,7 +51,10 @@ TIMEOUT_SEK = 15
 FASTE = tuple(f"input_datetime.bil_klar_{d}" for d in ("mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lordag", "sondag"))
 SLUTTID = "select.ev_smart_charging_charge_completion_time"
 LADNING = "sensor.ev_smart_charging_charging"
-TILKOBLET = "switch.ev_smart_charging_ev_connected"
+# Én fælles kilde (Julius 27/11: "lidt træls at tro den ikke sidder i laderen hvis den sidder i
+# laderen"): laderens live-status først, BMW's stik kun som reserve, når data er friske. Brug aldrig
+# EV Smart Chargings switch (en indstilling) eller BMW's stik direkte.
+SAT_TIL = "binary_sensor.bil_sat_til_laderen"
 BATTERI = "sensor.i3s_120_battery_ev_displayed_state_of_charge"
 ELPRIS = "sensor.energi_data_service"
 LADER = "sensor.lader_status_connector"
@@ -78,7 +81,7 @@ FORBRUG = (
 FORBRUG_FRA = "26/11-2026"
 
 LAESER = (
-    *FASTE, SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER,
+    *FASTE, SLUTTID, LADNING, SAT_TIL, BATTERI, ELPRIS, LADER,
     LAD_STANDARD, MAAL_I_NAT, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE,
     ELPRIS_CO2, *(e for _, *enheder in FORBRUG for e in enheder),
 )  # fmt: skip
@@ -323,7 +326,7 @@ class Status:
     start: str | None
     stop: str | None
     lader_nu: bool
-    tilkoblet: bool | None
+    tilkoblet: bool | None  # binary_sensor.bil_sat_til_laderen; None = ved ikke
     batteri: float | None
     elpris: float | None
     lader: str  # laderens egen status, fx "Available" eller "unavailable"
@@ -350,10 +353,13 @@ class Status:
             linjer.append(f"Batteri: {self.batteri:.0f} %.")
         if self.elpris is not None:
             linjer.append(f"Strøm nu: {self.elpris:.2f} kr./kWh".replace(".", ",", 1) + ".")
-        if self.lader in ("unavailable", "unknown"):
-            linjer.append("Laderen svarer ikke Home Assistant lige nu.")
-        elif self.tilkoblet is False:
-            linjer.append("Bilen er ikke sat til.")
+        lader_nede = self.lader in ("unavailable", "unknown")
+        if self.tilkoblet is None:
+            linjer.append("Ved ikke, om bilen er sat til (laderen svarer ikke).")
+        elif self.tilkoblet:
+            linjer.append("Bilen er sat til laderen." + (" Laderen svarer dog ikke Home Assistant lige nu." if lader_nede else ""))
+        else:
+            linjer.append("Bilen er ikke sat til." + (" Laderen svarer dog ikke Home Assistant lige nu." if lader_nede else ""))
         ude = f" (ude nu {self.ude:.0f} °C)" if self.ude is not None else ""
         if self.auto_forvarm and self.forvarm_under is not None:
             linjer.append(f"Forvarmning: automatisk under {self.forvarm_under:.0f} °C{ude}.")
@@ -367,7 +373,7 @@ class Status:
 async def status(nu: datetime | None = None) -> Status:
     nu = nu or datetime.now(TIDSZONE)
     dag = naeste_morgen(nu)
-    enheder = (FASTE[dag.weekday()], SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER, MAAL_I_NAT, LAD_STANDARD, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE)
+    enheder = (FASTE[dag.weekday()], SLUTTID, LADNING, SAT_TIL, BATTERI, ELPRIS, LADER, MAAL_I_NAT, LAD_STANDARD, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE)
     *navne, begivenheder = await asyncio.gather(*(tilstand(e) for e in enheder), _begivenheder(dag, dag + timedelta(days=1)))
     fast_t, slut, ladning, tilkoblet, batteri, elpris, lader, maal, standard, kommende, auto, under, ude = navne
     b = _paa_dato(begivenheder, dag)

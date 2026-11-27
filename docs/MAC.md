@@ -146,6 +146,33 @@ Sådan virker det:
 - Slå det fra med `{"fra": true}` i `~/.local/share/handle-mcp/claude_p.json`. Ligger `claude` et andet sted, så skriv stien som `{"claude": "/sti/til/claude"}` i samme fil.
 - Fejl står i `telegram-lytter.log` (kun fejltypen, aldrig beskeden). Logger `claude` ud, så kør `claude` og log ind igen.
 
+## 9. Bilen fra Telegram (Home Assistant)
+
+Kun hvis I har Home Assistant med EV Smart Charging og bil-hjælperne fra Smarthome-projektet (faste klar-tider, kalenderen `calendar.bil_afgang` til undtagelser, ladeniveau og forvarmning).
+
+1. I Home Assistant: klik på dit navn nederst til venstre → **Sikkerhed** → **Langtidsadgangstokens** → **Opret token**. Kald det "ugeplan-lytter", og kopiér det.
+2. I Terminal (tokenet læses fra udklipsholderen og vises ikke):
+
+```zsh
+ugeplan-mcp ha-opsaet
+```
+
+Kører Home Assistant et andet sted end i VM'en på denne Mac, så skriv adressen bagefter, fx `ugeplan-mcp ha-opsaet http://192.168.1.189:8123`. Kun adresser på hjemmenettet virker.
+
+3. Kommandoen viser bilens status. Genstart Claude-appen, så lytteren og de nye værktøjer kommer med.
+
+Skriv til botten:
+- *"bil"*: klar-tid, mål i nat, planlagt opladning, batteri, elpris, forvarmning og planlagte undtagelser
+- *"klar 7"*, *"klar 07:30"*, *"klar 7 100%"*: bilen skal være klar næste morgen (i morgen fra kl. 6, ellers i dag), kun denne gang, evt. ladet til en bestemt %. Lægges som undtagelse i kalenderen og ses under "Planlagte undtagelser" på dashboardet (sat om dagen planlægges det kl. 18)
+- *"klar normal"*: fjerner undtagelsen igen, så ugedagens faste tid gælder
+- *"lad til 90"*: ladeniveau hver nat (50–100 %). *"lad til 100 i nat"*: kun næste morgen (med den klar-tid, der gælder)
+- *"klar 5/12 5:30 100%"*: planlagt undtagelse en bestemt dag (% kan udelades). Én pr. dag: en ny erstatter den gamle
+- *"undtagelser"*: de næste planlagte undtagelser
+- *"forvarm nu"*: klimaanlægget nu (slukker selv). *"forvarmning til"*/*"fra"*, *"forvarm under 5"*: automatikken
+- *"oplad nu"*, *"stop opladning"*: laderen kan være et minut om at reagere
+
+Fri tekst ("hvad koster strømmen i aften?") besvares af `claude -p` med Home Assistant (kun læsning). Den må også styre bilen med de samme ting, men intet andet. Fjern adgangen igen ved at slette tokenet i Home Assistant.
+
 ## Tjekliste til første døgn
 
 Kør tjekket, når alt ovenfor er gjort, og igen næste dag:

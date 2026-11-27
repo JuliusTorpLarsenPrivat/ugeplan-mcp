@@ -29,6 +29,8 @@ RAEKKEFOLGE = (
     "handle_mcp.persondata",
     "handle_mcp.vagt",
     "handle_mcp.login",
+    "handle_mcp.ha",
+    "handle_mcp.ha_besked",
     "handle_mcp.maengde",
     "handle_mcp.opskrifter_web",
     "handle_mcp.butikker",

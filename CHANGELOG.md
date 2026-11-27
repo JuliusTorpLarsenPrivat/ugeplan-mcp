@@ -1,5 +1,16 @@
 # Ændringer
 
+## 0.40.0 (27/11-2026)
+
+- **Bilen fra Telegram:** har I Home Assistant med EV Smart Charging, kan en koblet telefon skrive *"bil"* (klar-tid, planlagt opladning, batteri, elpris), *"klar 7"* eller *"klar 07:30"* (bilen skal være klar næste morgen, kun denne gang), *"klar normal"* (tilbage til fast tid), *"oplad nu"* og *"stop opladning"*. Botten klarer det selv, uden AI, og svarer med det samme.
+- `claude -p` kan nu også svare på spørgsmål om huset ud fra Home Assistant (kun læsning) og styre bilen med de samme handlinger (nye værktøjer `bil_status`, `bil_klar`, `bil_oplad` m.fl.). Intet andet i Home Assistant kan ændres.
+- Sæt op med `ugeplan-mcp ha-opsaet`: læser et langtidstoken fra udklipsholderen, gemmer det i nøgleringen og tjekker det. Se [docs/MAC.md](docs/MAC.md) trin 9.
+- Vagten tillader kun jeres egen Home Assistant på hjemmenettet, kun den adresse, der er sat op, og kun læsning af tilstande og tryk på knapper. Et tryk på "oplad nu" sendes aldrig to gange.
+- **Ladeniveau, planlagte undtagelser og forvarmning:** *"klar 7 100%"* (klar-tid med ladeniveau), *"lad til 90"* (hver nat) og *"lad til 100 i nat"*, *"klar 5/12 5:30 100%"* (planlagt undtagelse en bestemt dag), *"undtagelser"* (de næste), *"forvarm nu"*, *"forvarmning til/fra"* og *"forvarm under 5"*. *"bil"* viser nu også mål i nat, forvarmning, udetemperatur og planlagte undtagelser. Nye værktøjer til `claude -p`: `bil_lad_til`, `bil_planlaeg`, `bil_forvarm`, `bil_forvarmning`.
+- Alle undtagelser ligger nu i kalenderen "Bil afgang" (ses under "Planlagte undtagelser" på dashboardet), også *"klar 7"* til næste morgen (i morgen fra kl. 6, ellers i dag). Én pr. dag: en ny erstatter den gamle, og *"klar normal"* sletter den. "Undtagelse i nat" (`input_boolean.undtagelse_i_nat`) bruges ikke længere.
+- Vagten tillader kun `input_number/set_value`, `calendar/create_event`, `input_boolean/turn_on|turn_off` (kun forvarmning), læsning af kalendere og websocket til netop `calendar/event/delete` i bilens kalender. `ha.SKRIV` og `ha.WS_SKRIV` bestemmer præcis hvilke enheder. Ny afhængighed: `websockets` (sletning kan kun ske via websocket).
+- Kræver én genstart af Claude-appen (syv nye værktøjer).
+
 ## 0.39.0 (25/11-2026)
 
 - **Svar på fri tekst med det samme:** skriver en koblet telefon noget, som botten ikke selv klarer, mens ingen AI-assistent eller madplan er i gang (fx "hvad skal vi have i aften?" eller "hvordan sov jeg?"), spørger lytteren headless Claude Code (`claude -p`) med ugeplan- og Garmin-serverne og sender svaret tilbage på Telegram. Kræver, at `claude` er installeret og logget ind på maskinen (se [docs/MAC.md](docs/MAC.md)). Uden `claude` er alt som før.

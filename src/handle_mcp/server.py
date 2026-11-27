@@ -12,6 +12,7 @@ from __future__ import annotations
 import functools
 import logging
 import sys
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -19,7 +20,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
-from handle_mcp import beholdning, data, fordeling, genindlaes, historik, login, lokal, madplan, maengde, opskrifter_web, persondata, profil, samling, telegram, vagt
+from handle_mcp import beholdning, data, fordeling, genindlaes, ha, ha_besked, historik, login, lokal, madplan, maengde, opskrifter_web, persondata, profil, samling, telegram, vagt
 from handle_mcp import butikker as butik_modul
 from handle_mcp import sammenlign as sml
 from handle_mcp import ugeplan as ugeplan_modul
@@ -481,6 +482,97 @@ async def fyld_kurv_fra_madplan(kode: str, godkendelse: str, kurven_maa_have_and
 async def leveringstider(butik: str = "nemlig", dage: int = 5) -> Any:
     """Ledige leveringstider med pris. Kun til orientering: brugeren vælger selv tiden."""
     return await _koer(_butik(butik).leveringstider(min(dage, 14)))
+
+
+# --- bilen i Home Assistant (ha.py) ----------------------------------------------------
+
+
+@vaerktoej(LOKAL_LAESER)
+async def bil_status() -> Any:
+    """Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid eller
+    undtagelse fra kalenderen), mål i nat og standard i %,
+    planlagt opladning, om den lader nu, batteri i %, elpris nu (kr./kWh), laderen, forvarmning,
+    udetemperatur og de næste planlagte undtagelser. `tekst` er et færdigt svar til husstanden."""
+    try:
+        s = await ha.status()
+    except ha.HAFejl as fejl:
+        raise ToolError(str(fejl)) from None
+    return {**s.__dict__, "tekst": s.tekst()}
+
+
+SKRIV_BIL = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False)
+ENGANG_BIL = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False)
+
+
+async def _bil(kald: Any) -> Any:
+    try:
+        return {"svar": await kald}
+    except ha.HAFejl as fejl:
+        raise ToolError(str(fejl)) from None
+
+
+@vaerktoej(SKRIV_BIL)
+async def bil_klar(tid: str, procent: int | None = None) -> Any:
+    """Sæt hvornår bilen skal være klar næste morgen (i morgen fra kl. 6, ellers i dag), kun denne
+    gang (fx "07:30"), evt. med ladeniveau i % (50–100), eller "normal" for at fjerne undtagelsen
+    og bruge ugedagens faste tid. Lægges som undtagelse i kalenderen og erstatter en eksisterende.
+    Home Assistant planlægger opladningen ud fra den (om dagen først kl. 18). Giver svaret til
+    husstanden."""
+    if tid.strip().lower() in ("normal", "fast", ""):
+        return await _bil(ha.saet_klar(None))
+    h = ha_besked.fortolk(f"klar {tid}")
+    if not h or h.hvad != "klar" or h.tid is None:
+        raise ToolError('Skriv tiden som "07:30", eller "normal".')
+    return await _bil(ha.saet_klar(h.tid, pct=procent if procent is not None else h.pct))
+
+
+@vaerktoej(SKRIV_BIL)
+async def bil_lad_til(procent: int, kun_i_nat: bool = False) -> Any:
+    """Bilens ladeniveau i % (50–100, trin på 5): hver nat (standard), eller kun næste morgen
+    (kun_i_nat=True laver en undtagelse med den klar-tid, der gælder nu)."""
+    return await _bil(ha.lad_til(procent, kun_i_nat))
+
+
+@vaerktoej(ENGANG_BIL)
+async def bil_planlaeg(dato: str, tid: str, procent: int | None = None) -> Any:
+    """Planlagt undtagelse en bestemt dag: bilen skal være klar kl. `tid` ("05:30") den `dato`
+    (ÅÅÅÅ-MM-DD), evt. ladet til `procent`. Lægges i kalenderen "Bil afgang" og erstatter en
+    eksisterende undtagelse samme dag."""
+    try:
+        dag = date.fromisoformat(dato.strip())
+    except ValueError:
+        raise ToolError('Skriv datoen som "2026-12-05".') from None
+    h = ha_besked.fortolk(f"klar {tid}")
+    if not h or h.hvad != "klar" or h.tid is None:
+        raise ToolError('Skriv tiden som "05:30".')
+    return await _bil(ha.planlaeg(dag, h.tid, procent))
+
+
+@vaerktoej(ENGANG_BIL)
+async def bil_forvarm() -> Any:
+    """Start bilens klimaanlæg nu (forvarmning). Slukker selv igen. Kun når nogen beder om det."""
+    return await _bil(ha.forvarm())
+
+
+@vaerktoej(SKRIV_BIL)
+async def bil_forvarmning(automatisk: bool | None = None, under_grader: int | None = None) -> Any:
+    """Automatisk forvarmning til/fra (`automatisk`) og/eller temperaturgrænsen i °C
+    (`under_grader`, -10 til 20), hvor bilen forvarmes automatisk."""
+    if automatisk is None and under_grader is None:
+        raise ToolError("Angiv automatisk og/eller under_grader.")
+    svar = []
+    if under_grader is not None:
+        svar.append((await _bil(ha.forvarm_under(under_grader)))["svar"])
+    if automatisk is not None:
+        svar.append((await _bil(ha.auto_forvarmning(automatisk)))["svar"])
+    return {"svar": " ".join(svar)}
+
+
+@vaerktoej(ENGANG_BIL)
+async def bil_oplad(start: bool) -> Any:
+    """Start (start=True) eller stop (start=False) bilens opladning nu, uden om planen.
+    Kun når nogen beder om det. Laderen kan være et minut om at reagere."""
+    return await _bil(ha.oplad(start))
 
 
 @vaerktoej(LAESER)

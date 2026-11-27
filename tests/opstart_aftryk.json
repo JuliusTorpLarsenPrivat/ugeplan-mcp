@@ -9,6 +9,193 @@
   }
  },
  "vaerktoejer": {
+  "bil_forvarm": {
+   "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": false,
+    "open_world_hint": false,
+    "read_only_hint": false
+   },
+   "description": "Start bilens klimaanlæg nu (forvarmning). Slukker selv igen. Kun når nogen beder om det.",
+   "input_schema": {
+    "properties": {},
+    "title": "bil_forvarmArguments",
+    "type": "object"
+   }
+  },
+  "bil_forvarmning": {
+   "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": false,
+    "read_only_hint": false
+   },
+   "description": "Automatisk forvarmning til/fra (`automatisk`) og/eller temperaturgrænsen i °C\n(`under_grader`, -10 til 20), hvor bilen forvarmes automatisk.",
+   "input_schema": {
+    "properties": {
+     "automatisk": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Automatisk"
+     },
+     "under_grader": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Under Grader"
+     }
+    },
+    "title": "bil_forvarmningArguments",
+    "type": "object"
+   }
+  },
+  "bil_klar": {
+   "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": false,
+    "read_only_hint": false
+   },
+   "description": "Sæt hvornår bilen skal være klar næste morgen (i morgen fra kl. 6, ellers i dag), kun denne\ngang (fx \"07:30\"), evt. med ladeniveau i % (50–100), eller \"normal\" for at fjerne undtagelsen\nog bruge ugedagens faste tid. Lægges som undtagelse i kalenderen og erstatter en eksisterende.\nHome Assistant planlægger opladningen ud fra den (om dagen først kl. 18). Giver svaret til\nhusstanden.",
+   "input_schema": {
+    "properties": {
+     "procent": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Procent"
+     },
+     "tid": {
+      "title": "Tid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "tid"
+    ],
+    "title": "bil_klarArguments",
+    "type": "object"
+   }
+  },
+  "bil_lad_til": {
+   "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": false,
+    "read_only_hint": false
+   },
+   "description": "Bilens ladeniveau i % (50–100, trin på 5): hver nat (standard), eller kun næste morgen\n(kun_i_nat=True laver en undtagelse med den klar-tid, der gælder nu).",
+   "input_schema": {
+    "properties": {
+     "kun_i_nat": {
+      "default": false,
+      "title": "Kun I Nat",
+      "type": "boolean"
+     },
+     "procent": {
+      "title": "Procent",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "procent"
+    ],
+    "title": "bil_lad_tilArguments",
+    "type": "object"
+   }
+  },
+  "bil_oplad": {
+   "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": false,
+    "open_world_hint": false,
+    "read_only_hint": false
+   },
+   "description": "Start (start=True) eller stop (start=False) bilens opladning nu, uden om planen.\nKun når nogen beder om det. Laderen kan være et minut om at reagere.",
+   "input_schema": {
+    "properties": {
+     "start": {
+      "title": "Start",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "start"
+    ],
+    "title": "bil_opladArguments",
+    "type": "object"
+   }
+  },
+  "bil_planlaeg": {
+   "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": false,
+    "open_world_hint": false,
+    "read_only_hint": false
+   },
+   "description": "Planlagt undtagelse en bestemt dag: bilen skal være klar kl. `tid` (\"05:30\") den `dato`\n(ÅÅÅÅ-MM-DD), evt. ladet til `procent`. Lægges i kalenderen \"Bil afgang\" og erstatter en\neksisterende undtagelse samme dag.",
+   "input_schema": {
+    "properties": {
+     "dato": {
+      "title": "Dato",
+      "type": "string"
+     },
+     "procent": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Procent"
+     },
+     "tid": {
+      "title": "Tid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "dato",
+     "tid"
+    ],
+    "title": "bil_planlaegArguments",
+    "type": "object"
+   }
+  },
+  "bil_status": {
+   "annotations": {
+    "open_world_hint": false,
+    "read_only_hint": true
+   },
+   "description": "Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid eller\nundtagelse fra kalenderen), mål i nat og standard i %,\nplanlagt opladning, om den lader nu, batteri i %, elpris nu (kr./kWh), laderen, forvarmning,\nudetemperatur og de næste planlagte undtagelser. `tekst` er et færdigt svar til husstanden.",
+   "input_schema": {
+    "properties": {},
+    "title": "bil_statusArguments",
+    "type": "object"
+   }
+  },
   "fjern_opskrift": {
    "annotations": {
     "destructive_hint": true,

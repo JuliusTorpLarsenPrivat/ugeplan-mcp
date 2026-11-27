@@ -1,5 +1,12 @@
 # Ændringer
 
+## 0.41.0 (27/11-2026)
+
+- **Opladningsforbrug på Telegram:** spørg bare, fx *"hvor meget har vi ladet for i november?"*, *"hvor meget CO2 i år?"* eller *"er det billigt at lade nu?"*. Botten svarer med kWh, kr., kg CO2 og kr./kWh for sidste opladning, seneste 24 t og 7 dage, denne måned, i år og i alt (talt fra 26/11-2026), plus strømprisen og CO2 nu og den billigste kommende time.
+- Ingen kommandoer at huske: beskeder om forbrug, CO2, kWh eller pris + opladning besvares med det samme uden AI. Spørges der om en anden periode ("i oktober", "i går", "sidste måned") eller er det uklart, svarer `claude -p` med det nye værktøj `bil_forbrug` (kun læsning) og samtalen.
+- Kun læsning: de nye sensorer kan kun læses herfra.
+- Kræver én genstart af Claude-appen (ét nyt værktøj).
+
 ## 0.40.1 (27/11-2026)
 
 Fundet i den første rigtige test af bilen på Telegram.

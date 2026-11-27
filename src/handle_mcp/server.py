@@ -568,6 +568,21 @@ async def bil_forvarmning(automatisk: bool | None = None, under_grader: int | No
     return {"svar": " ".join(svar)}
 
 
+@vaerktoej(LOKAL_LAESER)
+async def bil_forbrug() -> Any:
+    """Bilens opladningsforbrug (talt fra 26/11-2026): kWh, kr., kg CO2 og kr./kWh for sidste
+    opladning, seneste 24 t, seneste 7 dage, denne måned, i år og i alt. Desuden strømprisen nu
+    (kr./kWh), CO2 nu (g/kWh), billigste kommende time og snittet af de kommende timer. Til
+    spørgsmål om pris, kWh og CO2 for opladning, og om det er billigt at lade nu. `tekst` er et
+    færdigt svar."""
+    try:
+        f = await ha.forbrug()
+    except ha.HAFejl as fejl:
+        raise ToolError(str(fejl)) from None
+    return {"perioder": [{**p.__dict__, "kr_pr_kwh": p.kr_pr_kwh} for p in f.perioder], "elpris_nu": f.elpris, "co2_nu_g_pr_kwh": f.co2_nu,
+            "billigste_time": f.billigst, "snit_kommende": f.snit, "tekst": f.tekst()}  # fmt: skip
+
+
 @vaerktoej(ENGANG_BIL)
 async def bil_oplad(start: bool) -> Any:
     """Start (start=True) eller stop (start=False) bilens opladning nu, uden om planen.

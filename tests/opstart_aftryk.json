@@ -14,7 +14,7 @@
     "open_world_hint": false,
     "read_only_hint": true
    },
-   "description": "Bilens opladningsforbrug (talt fra 26/11-2026): kWh, kr., kg CO2 og kr./kWh for sidste\nopladning, seneste 24 t, seneste 7 dage, denne måned, i år og i alt. Desuden strømprisen nu\n(kr./kWh), CO2 nu (g/kWh), billigste kommende time og snittet af de kommende timer. Til\nspørgsmål om pris, kWh og CO2 for opladning, og om det er billigt at lade nu. `tekst` er et\nfærdigt svar.",
+   "description": "Bilens opladningsforbrug (talt fra 26/11-2026): kWh, kr., kg CO2 og kr./kWh for sidste\nopladning, seneste 24 t, i dag (fra kl. 00), seneste 7 dage, denne måned, i år og i alt, samt\n`i_gaar` og `sidste_maaned` (null, hvis Home Assistant ikke har et sikkert tal). Desuden strømprisen nu\n(kr./kWh), CO2 nu (g/kWh), billigste kommende time og snittet af de kommende timer. Til\nspørgsmål om pris, kWh og CO2 for opladning, og om det er billigt at lade nu. `tekst` er et\nfærdigt svar.",
    "input_schema": {
     "properties": {},
     "title": "bil_forbrugArguments",

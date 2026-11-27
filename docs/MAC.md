@@ -148,7 +148,7 @@ Sådan virker det:
 
 ## 9. Bilen fra Telegram (Home Assistant)
 
-Kun hvis I har Home Assistant med EV Smart Charging og bil-hjælperne fra Smarthome-projektet (klar-tid, `input_boolean.undtagelse_i_nat`, ladeniveau, kalenderen `calendar.bil_afgang` og forvarmning).
+Kun hvis I har Home Assistant med EV Smart Charging og bil-hjælperne fra Smarthome-projektet (faste klar-tider, kalenderen `calendar.bil_afgang` til undtagelser, ladeniveau og forvarmning).
 
 1. I Home Assistant: klik på dit navn nederst til venstre → **Sikkerhed** → **Langtidsadgangstokens** → **Opret token**. Kald det "ugeplan-lytter", og kopiér det.
 2. I Terminal (tokenet læses fra udklipsholderen og vises ikke):
@@ -163,10 +163,10 @@ Kører Home Assistant et andet sted end i VM'en på denne Mac, så skriv adresse
 
 Skriv til botten:
 - *"bil"*: klar-tid, mål i nat, planlagt opladning, batteri, elpris, forvarmning og planlagte undtagelser
-- *"klar 7"*, *"klar 07:30"*, *"klar 7 100%"*: bilen skal være klar næste morgen, kun denne gang, evt. ladet til en bestemt % (rundes ned til kvarter; sat om dagen planlægges det kl. 18)
-- *"klar normal"*: tilbage til ugedagens faste tid
-- *"lad til 90"*: ladeniveau hver nat (50–100 %). *"lad til 100 i nat"*: kun i nat
-- *"klar 5/12 5:30 100%"*: planlagt undtagelse en bestemt dag (% kan udelades). Én pr. dag; slet eller ret den på dashboardet
+- *"klar 7"*, *"klar 07:30"*, *"klar 7 100%"*: bilen skal være klar næste morgen (i morgen fra kl. 6, ellers i dag), kun denne gang, evt. ladet til en bestemt %. Lægges som undtagelse i kalenderen og ses under "Planlagte undtagelser" på dashboardet (sat om dagen planlægges det kl. 18)
+- *"klar normal"*: fjerner undtagelsen igen, så ugedagens faste tid gælder
+- *"lad til 90"*: ladeniveau hver nat (50–100 %). *"lad til 100 i nat"*: kun næste morgen (med den klar-tid, der gælder)
+- *"klar 5/12 5:30 100%"*: planlagt undtagelse en bestemt dag (% kan udelades). Én pr. dag: en ny erstatter den gamle
 - *"undtagelser"*: de næste planlagte undtagelser
 - *"forvarm nu"*: klimaanlægget nu (slukker selv). *"forvarmning til"*/*"fra"*, *"forvarm under 5"*: automatikken
 - *"oplad nu"*, *"stop opladning"*: laderen kan være et minut om at reagere

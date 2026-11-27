@@ -63,9 +63,9 @@ class VagtFejl(Exception):
 # disse stier. Hvilke enheder der må læses og trykkes, tjekker ha.py.
 HA_STIER = re.compile(
     r"^/api/(?:states/[a-z_]+\.[a-z0-9_]+|calendars/calendar\.[a-z0-9_]+"
-    r"|services/(?:input_datetime/set_datetime|input_boolean/turn_on|input_boolean/turn_off"
+    r"|services/(?:input_boolean/turn_on|input_boolean/turn_off"
     r"|input_number/set_value|calendar/create_event|button/press))$"
-)  # hvilke enheder hver service må bruges på, står i ha.SKRIV
+)  # hvilke enheder hver service må bruges på, står i ha.SKRIV (og ha.WS_SKRIV for websocket)
 
 
 def _lokal_vaert(vaert: str) -> bool:
@@ -105,6 +105,14 @@ def tjek_url(url: httpx.URL) -> None:
 
 async def _foer_kald(request: httpx.Request) -> None:
     tjek_url(request.url)
+
+
+def tjek_ws(url: httpx.URL) -> None:
+    """Websocket kun til jeres egen Home Assistant på hjemmenettet, kun /api/websocket.
+    Hvilke kommandoer der må sendes, står i ha.WS_SKRIV."""
+    vaert = url.host
+    if url.scheme not in ("ws", "wss") or url.path != "/api/websocket" or not (_lokal_vaert(vaert) and vaert == _ha_vaert()):
+        raise VagtFejl(f"Afvist: websocket til {vaert}{url.path} er ikke tilladt.")
 
 
 def ny_klient(timeout: float = 20, transport: httpx.AsyncBaseTransport | None = None) -> httpx.AsyncClient:

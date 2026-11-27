@@ -69,7 +69,7 @@
     "open_world_hint": false,
     "read_only_hint": false
    },
-   "description": "Sæt hvornår bilen skal være klar næste morgen, kun denne gang (fx \"07:30\"), evt. med\nladeniveau i % (50–100), eller \"normal\" for ugedagens faste tid. Home Assistant planlægger\nopladningen ud fra den (rundet ned til kvarter; om dagen først kl. 18). Giver svaret til\nhusstanden.",
+   "description": "Sæt hvornår bilen skal være klar næste morgen (i morgen fra kl. 6, ellers i dag), kun denne\ngang (fx \"07:30\"), evt. med ladeniveau i % (50–100), eller \"normal\" for at fjerne undtagelsen\nog bruge ugedagens faste tid. Lægges som undtagelse i kalenderen og erstatter en eksisterende.\nHome Assistant planlægger opladningen ud fra den (om dagen først kl. 18). Giver svaret til\nhusstanden.",
    "input_schema": {
     "properties": {
      "procent": {
@@ -103,7 +103,7 @@
     "open_world_hint": false,
     "read_only_hint": false
    },
-   "description": "Bilens ladeniveau i % (50–100, trin på 5): hver nat (standard), eller kun i nat\n(kun_i_nat=True slår \"undtagelse i nat\" til med den klar-tid, der gælder nu).",
+   "description": "Bilens ladeniveau i % (50–100, trin på 5): hver nat (standard), eller kun næste morgen\n(kun_i_nat=True laver en undtagelse med den klar-tid, der gælder nu).",
    "input_schema": {
     "properties": {
      "kun_i_nat": {
@@ -152,7 +152,7 @@
     "open_world_hint": false,
     "read_only_hint": false
    },
-   "description": "Planlagt undtagelse en bestemt dag: bilen skal være klar kl. `tid` (\"05:30\") den `dato`\n(ÅÅÅÅ-MM-DD), evt. ladet til `procent`. Lægges i kalenderen \"Bil afgang\". Én pr. dag; slet\neller ret kan kun gøres på dashboardet. Næste morgen sættes som almindelig klar-tid.",
+   "description": "Planlagt undtagelse en bestemt dag: bilen skal være klar kl. `tid` (\"05:30\") den `dato`\n(ÅÅÅÅ-MM-DD), evt. ladet til `procent`. Lægges i kalenderen \"Bil afgang\" og erstatter en\neksisterende undtagelse samme dag.",
    "input_schema": {
     "properties": {
      "dato": {
@@ -189,7 +189,7 @@
     "open_world_hint": false,
     "read_only_hint": true
    },
-   "description": "Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid,\nundtagelse i nat eller planlagt undtagelse fra kalenderen), mål i nat og standard i %,\nplanlagt opladning, om den lader nu, batteri i %, elpris nu (kr./kWh), laderen, forvarmning,\nudetemperatur og de næste planlagte undtagelser. `tekst` er et færdigt svar til husstanden.",
+   "description": "Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid eller\nundtagelse fra kalenderen), mål i nat og standard i %,\nplanlagt opladning, om den lader nu, batteri i %, elpris nu (kr./kWh), laderen, forvarmning,\nudetemperatur og de næste planlagte undtagelser. `tekst` er et færdigt svar til husstanden.",
    "input_schema": {
     "properties": {},
     "title": "bil_statusArguments",

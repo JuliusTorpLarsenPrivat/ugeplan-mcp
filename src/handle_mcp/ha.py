@@ -6,18 +6,17 @@ og det andet data". 27/11-2026: "Ja, udvid den" (ladeniveau, kalender og forvarm
 Home Assistant styrer laderen via OCPP og EV Smart Charging. Her laves kun disse ting, og kun på
 de enheder, der står nedenfor (SKRIV):
 
-  - status: læser klar-tid, planlagt opladning, batteri, elpris og laderen
-  - klar-tid: sætter engangstiden `input_datetime.bilen_skal_vaere_klar_kl` og slår
-    `input_boolean.undtagelse_i_nat` til (eller fra for ugedagens faste tid). Automatiseringen i
-    Home Assistant sætter selv EV Smart Chargings sluttid ud fra dem og slår undtagelsen fra kl. 12.
-  - ladeniveau: `input_number.lad_op_til` (hver nat) og `input_number.lad_op_til_i_nat` (når
-    undtagelsen er til). `input_number.bil_mal_i_nat` skriver automatiseringen; den læses kun.
-  - planlagt undtagelse: en heldagsbegivenhed "HH:MM PCT%" i kalenderen `calendar.bil_afgang`.
-    Slet kan REST ikke (kun websocket), så det gøres på dashboardet.
+  - status: læser klar-tid, planlagt opladning, batteri, elpris, laderen og forvarmning
+  - klar-tid: en heldagsbegivenhed "HH:MM PCT%" i kalenderen `calendar.bil_afgang` (står under
+    "Planlagte undtagelser" på dashboardet). Én pr. dag: en ny erstatter den gamle. Fortryd og
+    erstat sletter via websocket (`calendar/event/delete`), da REST ikke kan slette.
+    Automatiseringen sætter selv EV Smart Chargings sluttid og mål ud fra kalenderen.
+  - ladeniveau: `input_number.lad_op_til` (hver nat). `input_number.bil_mal_i_nat` skriver
+    automatiseringen; den læses kun.
   - forvarmning: `input_boolean.forvarm_bilen_nu` til (Mac-scriptet slukker selv), automatikken
     til/fra og temperaturgrænsen `input_number.forvarm_under`.
   - oplad nu / stop: trykker på EV Smart Chargings knapper for manuel start og stop
-Rækkefølgen for tid og % (i nat → kalender → fast ugedag/standard) klarer automatiseringen.
+27/11-2026: "Undtagelse i nat" (input_boolean.undtagelse_i_nat) bruges ikke længere; kun kalenderen.
 
 Intet andet i Home Assistant kan ændres herfra (se også vagt.py, der kun tillader netop disse
 adresser). Adressen ligger i home_assistant.json i datamappen, tokenet i nøgleringen.
@@ -26,6 +25,7 @@ adresser). Adressen ligger i home_assistant.json i datamappen, tokenet i nøgler
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
@@ -35,10 +35,12 @@ from zoneinfo import ZoneInfo
 import httpx
 import keyring
 import keyring.errors
+from websockets.asyncio.client import connect
+from websockets.exceptions import WebSocketException
 
 from handle_mcp import lokal
 from handle_mcp.login import TJENESTE
-from handle_mcp.vagt import VagtFejl, ny_klient
+from handle_mcp.vagt import VagtFejl, ny_klient, tjek_ws
 
 TIDSZONE = ZoneInfo("Europe/Copenhagen")
 FIL = "home_assistant"
@@ -46,8 +48,6 @@ NOEGLE_NAVN = "home-assistant"
 STANDARD_URL = "http://192.168.128.2:8123"  # Mac mini'ens interne kort til VM'en
 TIMEOUT_SEK = 15
 
-KLAR = "input_datetime.bilen_skal_vaere_klar_kl"
-UNDTAGELSE = "input_boolean.undtagelse_i_nat"
 FASTE = tuple(f"input_datetime.bil_klar_{d}" for d in ("mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lordag", "sondag"))
 SLUTTID = "select.ev_smart_charging_charge_completion_time"
 LADNING = "sensor.ev_smart_charging_charging"
@@ -58,7 +58,6 @@ LADER = "sensor.lader_status_connector"
 START = "button.ev_smart_charging_manually_start_charging"
 STOP = "button.ev_smart_charging_manually_stop_charging"
 LAD_STANDARD = "input_number.lad_op_til"
-LAD_I_NAT = "input_number.lad_op_til_i_nat"
 MAAL_I_NAT = "input_number.bil_mal_i_nat"
 KALENDER = "calendar.bil_afgang"
 KOMMENDE = "input_text.bil_kommende_undtagelser"
@@ -68,23 +67,24 @@ FORVARM_UNDER = "input_number.forvarm_under"
 UDE = "sensor.stue_stue_outside_temperature"
 
 LAESER = (
-    KLAR, UNDTAGELSE, *FASTE, SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER,
-    LAD_STANDARD, LAD_I_NAT, MAAL_I_NAT, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE,
+    *FASTE, SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER,
+    LAD_STANDARD, MAAL_I_NAT, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE,
 )  # fmt: skip
 KNAPPER = (START, STOP)
 # Det eneste, der kan ændres herfra: service -> de enheder, den må bruges på. Se også vagt.HA_STIER.
 SKRIV = {
-    "input_datetime/set_datetime": {KLAR},
-    "input_boolean/turn_on": {UNDTAGELSE, FORVARM_NU, AUTO_FORVARM},
-    "input_boolean/turn_off": {UNDTAGELSE, AUTO_FORVARM},
-    "input_number/set_value": {LAD_STANDARD, LAD_I_NAT, FORVARM_UNDER},
+    "input_boolean/turn_on": {FORVARM_NU, AUTO_FORVARM},
+    "input_boolean/turn_off": {AUTO_FORVARM},
+    "input_number/set_value": {LAD_STANDARD, FORVARM_UNDER},
     "calendar/create_event": {KALENDER},
     "button/press": set(KNAPPER),
 }
+WS_SKRIV = {"calendar/event/delete": {KALENDER}}  # websocket: kun sletning i bilens kalender
 LAD_MIN, LAD_MAX = 50, 100  # som hjælperne i Home Assistant (trin på 5)
 FORVARM_MIN, FORVARM_MAX = -10, 20
 
 _transport: httpx.AsyncBaseTransport | None = None  # kun til test
+_ws_transport = None  # kun til test: async (besked) -> svar
 
 
 class HAFejl(Exception):
@@ -168,6 +168,44 @@ async def _kald(metode: str, sti: str, data: dict | None = None) -> object:
         return None
 
 
+class _UdenOmdirigering(connect):
+    def process_redirect(self, exc: Exception) -> Exception:
+        return exc  # vagten har tjekket adressen; en omdirigering følges aldrig
+
+
+async def _ws(besked: dict) -> dict:
+    """Én websocket-kommando til Home Assistant (kun dem i WS_SKRIV). Ingen gentagelser."""
+    if besked.get("entity_id") not in WS_SKRIV.get(str(besked.get("type")), ()):
+        raise HAFejl(f"{besked.get('type')} må ikke bruges herfra.")
+    token = hent_token()
+    adresse = httpx.URL(url())
+    adresse = adresse.copy_with(scheme="wss" if adresse.scheme == "https" else "ws", path="/api/websocket")
+    try:
+        tjek_ws(adresse)
+    except VagtFejl as fejl:
+        raise HAFejl(str(fejl)) from None
+    if _ws_transport is not None:
+        svar = await _ws_transport(besked)
+    else:
+        try:
+            async with asyncio.timeout(TIMEOUT_SEK):
+                async with _UdenOmdirigering(str(adresse), max_size=2**20, open_timeout=TIMEOUT_SEK) as ws:
+                    await ws.recv()  # auth_required
+                    await ws.send(json.dumps({"type": "auth", "access_token": token}))
+                    if json.loads(await ws.recv()).get("type") != "auth_ok":
+                        raise HAFejl("Home Assistant afviste tokenet. Lav et nyt og kør: ugeplan-mcp ha-opsaet")
+                    await ws.send(json.dumps({"id": 1, **besked}))
+                    while (svar := json.loads(await ws.recv())).get("id") != 1:
+                        pass
+        except TimeoutError:
+            raise HAFejl("Home Assistant svarede ikke inden for 15 sekunder.") from None
+        except (OSError, WebSocketException, ValueError) as fejl:
+            raise HAFejl(f"Kunne ikke nå Home Assistant: {_rens(str(fejl), token)}") from None
+    if not svar.get("success"):
+        raise HAFejl(f"Home Assistant: {(svar.get('error') or {}).get('message', 'ukendt fejl')}")
+    return svar
+
+
 async def tilstand(entitet: str) -> dict:
     if entitet not in LAESER:
         raise HAFejl(f"{entitet} må ikke læses herfra.")
@@ -225,9 +263,9 @@ def _hhmm(t: str) -> str:
     return t[:5].replace(":", ".")
 
 
-def naeste_morgen(nu: datetime) -> datetime:
-    """Samme regel som automatiseringen: efter kl. 12 gælder tiderne i morgen."""
-    return nu + timedelta(days=1) if nu.hour >= 12 else nu
+def naeste_morgen(nu: datetime) -> date:
+    """Den morgen, en klar-tid gælder: i morgen fra kl. 6, ellers i dag."""
+    return (nu + timedelta(days=1)).date() if nu.hour >= 6 else nu.date()
 
 
 def _tid(iso: str | None) -> str | None:
@@ -255,10 +293,18 @@ def dato_tekst(d: date) -> str:
     return f"{DAGE[d.weekday()]} {d.day}/{d.month}"
 
 
+def _hvornaar(dag: date, nu: datetime) -> str:
+    if dag == nu.date():
+        return "i dag"
+    if dag == nu.date() + timedelta(days=1):
+        return "i morgen"
+    return dato_tekst(dag)
+
+
 @dataclass
 class Status:
     klar: str  # "06.15"
-    undtagelse: bool  # "Undtagelse i nat" er slået til
+    planlagt_undtagelse: str | None  # kalenderens titel for næste morgen, fx "07:30 100%"
     dag: str  # "fredag"
     sluttid: str | None  # EV Smart Chargings sluttid lige nu
     planlagt: bool
@@ -269,7 +315,6 @@ class Status:
     batteri: float | None
     elpris: float | None
     lader: str  # laderens egen status, fx "Available" eller "unavailable"
-    kalender: bool = False  # næste morgen kommer fra en planlagt undtagelse i kalenderen
     maal: float | None = None  # bil_mal_i_nat, som automatiseringen har sat
     lad_standard: float | None = None
     kommende: str | None = None  # input_text.bil_kommende_undtagelser
@@ -278,12 +323,7 @@ class Status:
     ude: float | None = None
 
     def tekst(self) -> str:
-        if self.undtagelse:
-            hvilken = "undtagelse, kun denne gang"
-        elif self.kalender:
-            hvilken = "planlagt undtagelse"
-        else:
-            hvilken = f"fast tid {self.dag}"
+        hvilken = "undtagelse, kun denne gang" if self.planlagt_undtagelse else f"fast tid {self.dag}"
         linjer = [f"Bilen skal være klar kl. {self.klar} ({hvilken})."]
         if self.maal is not None:
             standard = f" (standard {_pct(self.lad_standard)})" if self.lad_standard is not None and self.lad_standard != self.maal else ""
@@ -315,22 +355,18 @@ class Status:
 async def status(nu: datetime | None = None) -> Status:
     nu = nu or datetime.now(TIDSZONE)
     dag = naeste_morgen(nu)
-    fast = FASTE[dag.weekday()]
-    enheder = (KLAR, UNDTAGELSE, fast, SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER, MAAL_I_NAT, LAD_STANDARD, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE)
-    *navne, begivenheder = await asyncio.gather(*(tilstand(e) for e in enheder), _begivenheder(dag.date(), dag.date() + timedelta(days=1)))
-    klar, undt, fast_t, slut, ladning, tilkoblet, batteri, elpris, lader, maal, standard, kommende, auto, under, ude = navne
-    undtagelse = undt.get("state") == "on" and klar.get("state") not in ("unknown", "unavailable", None)
-    planlagt_b = None if undtagelse else _paa_dato(begivenheder, dag.date())
-    if undtagelse:
-        tid = str(klar["state"])
-    elif planlagt_b and (m := BEGIVENHED.match(str(planlagt_b["summary"]))):
+    enheder = (FASTE[dag.weekday()], SLUTTID, LADNING, TILKOBLET, BATTERI, ELPRIS, LADER, MAAL_I_NAT, LAD_STANDARD, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE)
+    *navne, begivenheder = await asyncio.gather(*(tilstand(e) for e in enheder), _begivenheder(dag, dag + timedelta(days=1)))
+    fast_t, slut, ladning, tilkoblet, batteri, elpris, lader, maal, standard, kommende, auto, under, ude = navne
+    b = _paa_dato(begivenheder, dag)
+    if b and (m := BEGIVENHED.match(str(b["summary"]))):
         tid = f"{int(m.group(1)):02d}:{m.group(2)}"
     else:
         tid = str(fast_t.get("state", "06:15:00"))
     attr = ladning.get("attributes") or {}
     return Status(
         klar=_hhmm(tid),
-        undtagelse=undtagelse,
+        planlagt_undtagelse=str(b["summary"]).strip() if b else None,
         dag=DAGE[dag.weekday()],
         sluttid=slut.get("state") if slut.get("state") not in ("unknown", "unavailable") else None,
         planlagt=bool(attr.get("charging_is_planned")),
@@ -341,7 +377,6 @@ async def status(nu: datetime | None = None) -> Status:
         batteri=_tal(batteri.get("state")),
         elpris=_tal(elpris.get("state")),
         lader=str(lader.get("state")),
-        kalender=planlagt_b is not None,
         maal=_tal(maal.get("state")),
         lad_standard=_tal(standard.get("state")),
         kommende=str(kommende.get("state")) if kommende.get("state") else None,
@@ -357,73 +392,74 @@ def _tjek_pct(pct: int) -> int:
     return round(pct / 5) * 5
 
 
-def _planlaegning(nu: datetime, s: Status) -> str:
+def _planlaegning(dag: date, nu: datetime) -> str:
+    if dag != naeste_morgen(nu):
+        return ""
     if 6 <= nu.hour < 18:
         return " Opladningen planlægges kl. 18."
-    if s.planlagt and s.start and s.stop:
-        return f" Opladning planlagt {s.start}–{s.stop}."
-    return ""
+    return " Opladningen planlægges om lidt."
+
+
+async def _slet(b: dict) -> None:
+    uid = b.get("uid")
+    if not uid:
+        raise HAFejl("Begivenheden har intet id.")
+    await _ws({"type": "calendar/event/delete", "entity_id": KALENDER, "uid": uid})
+
+
+def _dashboard(b: dict, dag: date, nu: datetime, fejl: HAFejl) -> HAFejl:
+    return HAFejl(f"{fejl} Undtagelsen {_hvornaar(dag, nu)} ({b.get('summary')}) står der stadig. Slet den under Planlagte undtagelser på dashboardet.")
+
+
+async def planlaeg(dag: date, tid: time, pct: int | None = None, nu: datetime | None = None) -> str:
+    """Undtagelse en bestemt morgen: en heldagsbegivenhed i bilens kalender. Én pr. dag: en
+    eksisterende slettes først."""
+    nu = nu or datetime.now(TIDSZONE)
+    if dag < naeste_morgen(nu):
+        raise HAFejl(f"{dato_tekst(dag)} er allerede gået.")
+    if dag > nu.date() + timedelta(days=366):
+        raise HAFejl("Det er mere end et år frem.")
+    pct = _tjek_pct(pct) if pct is not None else None
+    titel = f"{tid.hour:02d}:{tid.minute:02d}" + (f" {pct}%" if pct is not None else "")
+    erstattet = ""
+    if b := _paa_dato(await _begivenheder(dag, dag + timedelta(days=1)), dag):
+        try:
+            await _slet(b)  # først slet, så der aldrig ligger to; fejler oprettelsen, gælder den faste tid
+        except HAFejl as fejl:
+            raise _dashboard(b, dag, nu, fejl) from None
+        erstattet = f" (erstatter {b.get('summary')})"
+    await _service("calendar/create_event", KALENDER, summary=titel, start_date=dag.isoformat(), end_date=(dag + timedelta(days=1)).isoformat())
+    ladet = f", ladet til {pct} %" if pct is not None else ""
+    return f"Bilen skal være klar kl. {_hhmm(titel)} {_hvornaar(dag, nu)}{ladet} (kun denne gang){erstattet}." + _planlaegning(dag, nu)
 
 
 async def saet_klar(tid: time | None, nu: datetime | None = None, pct: int | None = None) -> str:
-    """Engangstid til næste morgen (evt. med ladeniveau), eller None for den faste tid.
-    Giver svaret til husstanden."""
+    """Klar-tid næste morgen (evt. med ladeniveau), eller None for at fjerne undtagelsen igen."""
     nu = nu or datetime.now(TIDSZONE)
-    if tid is None:
-        await _service("input_boolean/turn_off", UNDTAGELSE)
-        s = await status(nu)
-        hvilken = "planlagt undtagelse" if s.kalender else f"fast tid {s.dag}"
-        return f"Undtagelsen er fjernet. Bilen skal være klar kl. {s.klar} ({hvilken})." + _planlaegning(nu, s)
-    pct = _tjek_pct(pct) if pct is not None else None
-    vaerdi = f"{tid.hour:02d}:{tid.minute:02d}:00"
-    await _service("input_datetime/set_datetime", KLAR, time=vaerdi)
-    if pct is not None:
-        await _service("input_number/set_value", LAD_I_NAT, value=pct)
-    await _service("input_boolean/turn_on", UNDTAGELSE)
-    i_nat = pct if pct is not None else _tal((await tilstand(LAD_I_NAT)).get("state"))
+    dag = naeste_morgen(nu)
+    if tid is not None:
+        return await planlaeg(dag, tid, pct, nu)
+    b = _paa_dato(await _begivenheder(dag, dag + timedelta(days=1)), dag)
+    if b:
+        try:
+            await _slet(b)
+        except HAFejl as fejl:
+            raise _dashboard(b, dag, nu, fejl) from None
     s = await status(nu)
-    kvarter = f"{tid.hour:02d}.{tid.minute // 15 * 15:02d}"
-    hvornaar = "i morgen" if naeste_morgen(nu).date() != nu.date() else "i dag"
-    ladet = f", ladet til {_pct(i_nat)}" if i_nat is not None else ""
-    svar = f"Bilen skal være klar kl. {_hhmm(vaerdi)} {hvornaar}{ladet} (kun denne gang)."
-    if kvarter != _hhmm(vaerdi):
-        svar += f" Opladningen er færdig kl. {kvarter} (hele kvarter)."
-    return svar + _planlaegning(nu, s)
+    if not b:
+        return f"Der er ingen undtagelse {_hvornaar(dag, nu)}. Bilen skal være klar kl. {s.klar} (fast tid {s.dag})."
+    return f"Undtagelsen {_hvornaar(dag, nu)} ({b.get('summary')}) er fjernet. Bilen skal være klar kl. {s.klar} (fast tid {s.dag})." + _planlaegning(dag, nu)
 
 
 async def lad_til(pct: int, kun_i_nat: bool = False, nu: datetime | None = None) -> str:
-    """Ladeniveau hver nat, eller kun i nat (slår undtagelsen til med den tid, der gælder nu)."""
+    """Ladeniveau hver nat, eller kun i nat (undtagelse næste morgen med den tid, der gælder)."""
     nu = nu or datetime.now(TIDSZONE)
     pct = _tjek_pct(pct)
     if not kun_i_nat:
         await _service("input_number/set_value", LAD_STANDARD, value=pct)
         return f"Bilen lades nu til {pct} % hver nat (undtagelser kan sætte andet)."
     s = await status(nu)
-    if s.undtagelse:
-        await _service("input_number/set_value", LAD_I_NAT, value=pct)
-        await _service("input_boolean/turn_on", UNDTAGELSE)
-        return f"Bilen lades til {pct} % i nat og skal være klar kl. {s.klar} (kun denne gang)." + _planlaegning(nu, s)
-    t = datetime.strptime(s.klar, "%H.%M").time()
-    return await saet_klar(t, nu, pct)
-
-
-async def planlaeg(dag: date, tid: time, pct: int | None = None, nu: datetime | None = None) -> str:
-    """Planlagt undtagelse en bestemt dato: en heldagsbegivenhed i bilens kalender."""
-    nu = nu or datetime.now(TIDSZONE)
-    naeste = naeste_morgen(nu).date()
-    if dag < naeste:
-        raise HAFejl(f"{dato_tekst(dag)} er allerede gået.")
-    if dag > nu.date() + timedelta(days=366):
-        raise HAFejl("Det er mere end et år frem.")
-    if dag == naeste:  # næste morgen: så er det bare en klar-tid til i nat
-        return await saet_klar(tid, nu, pct)
-    pct = _tjek_pct(pct) if pct is not None else None
-    if b := _paa_dato(await _begivenheder(dag, dag + timedelta(days=1)), dag):
-        raise HAFejl(f"Der ligger allerede en undtagelse {dato_tekst(dag)} ({b.get('summary')}). Slet den på dashboardet først.")
-    titel = f"{tid.hour:02d}:{tid.minute:02d}" + (f" {pct}%" if pct is not None else "")
-    await _service("calendar/create_event", KALENDER, summary=titel, start_date=dag.isoformat(), end_date=(dag + timedelta(days=1)).isoformat())
-    ladet = f", ladet til {pct} %" if pct is not None else ""
-    return f"Planlagt: {dato_tekst(dag)} skal bilen være klar kl. {_hhmm(titel)}{ladet}. Slet den på dashboardet, hvis planen ændrer sig."
+    return await planlaeg(naeste_morgen(nu), datetime.strptime(s.klar, "%H.%M").time(), pct, nu)
 
 
 async def undtagelser() -> str:

@@ -489,8 +489,8 @@ async def leveringstider(butik: str = "nemlig", dage: int = 5) -> Any:
 
 @vaerktoej(LOKAL_LAESER)
 async def bil_status() -> Any:
-    """Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid,
-    undtagelse i nat eller planlagt undtagelse fra kalenderen), mål i nat og standard i %,
+    """Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid eller
+    undtagelse fra kalenderen), mål i nat og standard i %,
     planlagt opladning, om den lader nu, batteri i %, elpris nu (kr./kWh), laderen, forvarmning,
     udetemperatur og de næste planlagte undtagelser. `tekst` er et færdigt svar til husstanden."""
     try:
@@ -513,9 +513,10 @@ async def _bil(kald: Any) -> Any:
 
 @vaerktoej(SKRIV_BIL)
 async def bil_klar(tid: str, procent: int | None = None) -> Any:
-    """Sæt hvornår bilen skal være klar næste morgen, kun denne gang (fx "07:30"), evt. med
-    ladeniveau i % (50–100), eller "normal" for ugedagens faste tid. Home Assistant planlægger
-    opladningen ud fra den (rundet ned til kvarter; om dagen først kl. 18). Giver svaret til
+    """Sæt hvornår bilen skal være klar næste morgen (i morgen fra kl. 6, ellers i dag), kun denne
+    gang (fx "07:30"), evt. med ladeniveau i % (50–100), eller "normal" for at fjerne undtagelsen
+    og bruge ugedagens faste tid. Lægges som undtagelse i kalenderen og erstatter en eksisterende.
+    Home Assistant planlægger opladningen ud fra den (om dagen først kl. 18). Giver svaret til
     husstanden."""
     if tid.strip().lower() in ("normal", "fast", ""):
         return await _bil(ha.saet_klar(None))
@@ -527,16 +528,16 @@ async def bil_klar(tid: str, procent: int | None = None) -> Any:
 
 @vaerktoej(SKRIV_BIL)
 async def bil_lad_til(procent: int, kun_i_nat: bool = False) -> Any:
-    """Bilens ladeniveau i % (50–100, trin på 5): hver nat (standard), eller kun i nat
-    (kun_i_nat=True slår "undtagelse i nat" til med den klar-tid, der gælder nu)."""
+    """Bilens ladeniveau i % (50–100, trin på 5): hver nat (standard), eller kun næste morgen
+    (kun_i_nat=True laver en undtagelse med den klar-tid, der gælder nu)."""
     return await _bil(ha.lad_til(procent, kun_i_nat))
 
 
 @vaerktoej(ENGANG_BIL)
 async def bil_planlaeg(dato: str, tid: str, procent: int | None = None) -> Any:
     """Planlagt undtagelse en bestemt dag: bilen skal være klar kl. `tid` ("05:30") den `dato`
-    (ÅÅÅÅ-MM-DD), evt. ladet til `procent`. Lægges i kalenderen "Bil afgang". Én pr. dag; slet
-    eller ret kan kun gøres på dashboardet. Næste morgen sættes som almindelig klar-tid."""
+    (ÅÅÅÅ-MM-DD), evt. ladet til `procent`. Lægges i kalenderen "Bil afgang" og erstatter en
+    eksisterende undtagelse samme dag."""
     try:
         dag = date.fromisoformat(dato.strip())
     except ValueError:

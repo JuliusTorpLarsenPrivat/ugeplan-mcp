@@ -888,6 +888,101 @@
     "type": "object"
    }
   },
+  "varme_sov_godt": {
+   "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": false,
+    "open_world_hint": false,
+    "read_only_hint": false
+   },
+   "description": "Sov godt: slukker varmepumpen i ca. 45 min (indstilles på dashboardet), så den ikke larmer,\nmens de falder i søvn, og tænder den igen som før. til=False stopper det og tænder nu.",
+   "input_schema": {
+    "properties": {
+     "til": {
+      "default": true,
+      "title": "Til",
+      "type": "boolean"
+     }
+    },
+    "title": "varme_sov_godtArguments",
+    "type": "object"
+   }
+  },
+  "varme_status": {
+   "annotations": {
+    "open_world_hint": false,
+    "read_only_hint": true
+   },
+   "description": "Varmepumpen i stuen (Panasonic, luft-til-luft): tilstand (heat/fan_only/off), om den varmer\nnu, måltemperatur, inde- og udetemperatur (°C), effekt nu (W, Panasonics skøn), kWh og kr. i\ndag, kr. i går, blæser, styrke og `sov_til` (klokkeslæt, når sov godt er i gang). `tekst` er et\nfærdigt svar til husstanden.",
+   "input_schema": {
+    "properties": {},
+    "title": "varme_statusArguments",
+    "type": "object"
+   }
+  },
+  "varme_styr": {
+   "annotations": {
+    "destructive_hint": false,
+    "idempotent_hint": true,
+    "open_world_hint": false,
+    "read_only_hint": false
+   },
+   "description": "Styr varmepumpen nu. `tilstand`: \"varme\", \"luft ud\" (kun blæs, uden varme; sætter blæseren\npå høj) eller \"sluk\". `grader`: måltemperatur 16–30 °C (tænder varme). `blaeser`: auto, lav,\nmellem eller høj. `styrke`: normal, stille eller kraftig. Angiv mindst én. Giver svaret.",
+   "input_schema": {
+    "properties": {
+     "blaeser": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Blaeser"
+     },
+     "grader": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Grader"
+     },
+     "styrke": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Styrke"
+     },
+     "tilstand": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Tilstand"
+     }
+    },
+    "title": "varme_styrArguments",
+    "type": "object"
+   }
+  },
   "vent_paa_svar": {
    "annotations": {
     "open_world_hint": false,

@@ -20,7 +20,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
-from handle_mcp import beholdning, data, fordeling, genindlaes, ha, ha_besked, historik, login, lokal, madplan, maengde, opskrifter_web, persondata, profil, samling, telegram, vagt
+from handle_mcp import beholdning, data, fordeling, genindlaes, ha, ha_besked, historik, login, lokal, madplan, maengde, opskrifter_web, persondata, profil, samling, telegram, vagt, varme
 from handle_mcp import butikker as butik_modul
 from handle_mcp import sammenlign as sml
 from handle_mcp import ugeplan as ugeplan_modul
@@ -592,6 +592,53 @@ async def bil_oplad(start: bool) -> Any:
     """Start (start=True) eller stop (start=False) bilens opladning nu, uden om planen.
     Kun når nogen beder om det. Laderen kan være et minut om at reagere."""
     return await _bil(ha.oplad(start))
+
+
+# --- varmepumpen i Home Assistant (varme.py) ----------------------------------------------
+
+
+@vaerktoej(LOKAL_LAESER)
+async def varme_status() -> Any:
+    """Varmepumpen i stuen (Panasonic, luft-til-luft): tilstand (heat/fan_only/off), om den varmer
+    nu, måltemperatur, inde- og udetemperatur (°C), effekt nu (W, Panasonics skøn), kWh og kr. i
+    dag, kr. i går, blæser, styrke og `sov_til` (klokkeslæt, når sov godt er i gang). `tekst` er et
+    færdigt svar til husstanden."""
+    try:
+        s = await varme.status()
+    except ha.HAFejl as fejl:
+        raise ToolError(str(fejl)) from None
+    return {**s.__dict__, "tekst": s.tekst()}
+
+
+@vaerktoej(SKRIV_BIL)
+async def varme_styr(
+    tilstand: str | None = None, grader: float | None = None, blaeser: str | None = None, styrke: str | None = None
+) -> Any:
+    """Styr varmepumpen nu. `tilstand`: "varme", "luft ud" (kun blæs, uden varme; sætter blæseren
+    på høj) eller "sluk". `grader`: måltemperatur 16–30 °C (tænder varme). `blaeser`: auto, lav,
+    mellem eller høj. `styrke`: normal, stille eller kraftig. Angiv mindst én. Giver svaret."""
+    if tilstand is None and grader is None and blaeser is None and styrke is None:
+        raise ToolError("Angiv tilstand, grader, blaeser og/eller styrke.")
+    handlinger = {"varme": varme.varme, "luft ud": varme.luft_ud, "sluk": varme.sluk}
+    svar = []
+    if tilstand is not None:
+        if (t := tilstand.strip().lower().replace("_", " ")) not in handlinger:
+            raise ToolError('tilstand skal være "varme", "luft ud" eller "sluk".')
+        svar.append((await _bil(handlinger[t]()))["svar"])
+    if grader is not None:
+        svar.append((await _bil(varme.saet_grader(grader)))["svar"])
+    if blaeser is not None:
+        svar.append((await _bil(varme.saet_blaeser(blaeser.strip().lower())))["svar"])
+    if styrke is not None:
+        svar.append((await _bil(varme.saet_styrke(styrke.strip().lower())))["svar"])
+    return {"svar": " ".join(svar)}
+
+
+@vaerktoej(ENGANG_BIL)
+async def varme_sov_godt(til: bool = True) -> Any:
+    """Sov godt: slukker varmepumpen i ca. 45 min (indstilles på dashboardet), så den ikke larmer,
+    mens de falder i søvn, og tænder den igen som før. til=False stopper det og tænder nu."""
+    return await _bil(varme.sov_godt() if til else varme.vaagn())
 
 
 @vaerktoej(LAESER)

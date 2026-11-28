@@ -28,7 +28,7 @@ import httpx
 import keyring
 import keyring.errors
 
-from handle_mcp import beholdning_besked, claude_p, ha, ha_besked, lokal, madplan, profil, traening
+from handle_mcp import beholdning_besked, claude_p, ha, ha_besked, lokal, madplan, profil, traening, varme
 from handle_mcp.lokal import laes, skriv
 from handle_mcp.login import TJENESTE
 from handle_mcp.vagt import VagtFejl, ny_klient, send
@@ -524,6 +524,15 @@ async def haandter(opdatering: dict) -> str | None:
             return f"ugemenu sendt til {navn}"
         await _svar(chat_id, "Der er ingen madplan i kurven lige nu.")
         return f"ingen ugemenu til {navn}"
+    if (v := varme.fortolk(tekst)) and ha.sat_op():
+        # Varmepumpen i almindelig tale, uden AI'en: "hvor varmt er der?", "sluk varmen",
+        # "sæt varmen til 22", "vi lufter ud", "sov godt" (varme.py). Før bilen: "varmens forbrug".
+        svar = await varme.udfoer(v)
+        _gem_besked(navn, tekst, laest=True)
+        await _videresend(chat_id, navn, tekst)
+        await _svar(chat_id, svar)
+        _gem_besked("handle-botten", f"Svar til {navn}: {svar}", laest=True)
+        return f"varme ({v.hvad}) fra {navn}"
     if (bil := ha_besked.fortolk(tekst)) and ha.sat_op():
         # Bilen i Home Assistant, uden AI'en: "bil", "klar 7", "lad til 90", "forvarm nu" osv. (ha_besked.py).
         svar = await ha_besked.udfoer(bil)
@@ -534,7 +543,9 @@ async def haandter(opdatering: dict) -> str | None:
         return f"bil ({bil.hvad}) fra {navn}"
     # Om bilen, men ikke en sikker kommando ("slet undtagelsen igen", "slet den igen" efter en snak
     # om bilen): aldrig beholdningen. claude -p forstår den ud fra de seneste beskeder.
-    bil_samtale = ha.sat_op() and ha_besked.om_bilen(tekst, laes("beskeder").get("beskeder", []))
+    bil_samtale = ha.sat_op() and (
+        ha_besked.om_bilen(tekst, laes("beskeder").get("beskeder", [])) or varme.om_varmen(tekst)
+    )  # bilen eller varmepumpen
     if not bil_samtale and not plan_i_gang() and (handling := beholdning_besked.fortolk(tekst)):
         # Uden AI'en: "har 2 kg kartofler", "skudt et rådyr, ligger i fryseren", "fortryd".
         # Mens en plan er i gang, er "vi har …" et svar til AI'en og bliver ikke rørt her.
@@ -546,7 +557,7 @@ async def haandter(opdatering: dict) -> str | None:
             await _svar(modtager, svar)
         return f"beholdning ændret af {navn}"
     if bil_samtale:
-        log.info("besked fra %s handler om bilen: til claude -p med samtalen", navn)
+        log.info("besked fra %s handler om bilen eller varmen: til claude -p med samtalen", navn)
     husket = False
     if profil.er_huskeoenske(tekst):
         # Gemmes i profilen her, uden Claude: så er ønsket med i alle kommende madplaner, også

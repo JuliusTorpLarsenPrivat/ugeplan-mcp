@@ -1,5 +1,14 @@
 # Ændringer
 
+## 0.43.0 (28/11-2026)
+
+Julius 28/11: *"udbyg og gør det til at den fatter menneskesprog og ikke kun kommandoer"*, og begge telefoner må styre.
+
+- **Varmepumpen fra Telegram i almindelig tale** (Panasonic i stuen, nyt modul `varme.py`). Uden AI: *"hvor varmt er der?"*, *"er varmen tændt?"*, *"hvad har varmen kostet i dag?"* (status: inde, ude, mål, drift, effekt, kWh og kr. i dag og i går), *"tænd varmen"*, *"sluk varmen"*, *"sæt varmen til 22"*, *"skru op for varmen"*, *"lidt koldere"*, *"vi lufter ud"* (kun blæs, høj), *"færdig med at lufte ud"*, *"sov godt"* / *"vi går i seng"* (slukker i 45 min og tænder igen som før), *"tænd varmen igen"*, *"varmepumpen larmer"* (stille), *"blæser på høj"*.
+- Alt andet om varmen, og alt med tid, betingelse eller nægtelse (*"sluk varmen kl. 22"*, *"det er koldt herinde"*), går til `claude -p` med de nye værktøjer `varme_status`, `varme_styr` og `varme_sov_godt`. Aldrig til beholdningen.
+- Kun `climate.stue_stue` (varme, luft ud, sluk, temperatur 16–30 °C, blæser, styrke), `script.varme_sov_godt` og `timer.varme_sov_godt` kan ændres herfra. Køl, affugt og auto kan ikke vælges. Vagten tillader kun de seks nye services.
+- Kræver én genstart af Claude-appen (nye værktøjer).
+
 ## 0.42.1 (28/11-2026)
 
 - **Batteri-% fra estimatet:** *"bil"*, `bil_status` og svar fra `claude -p` bruger nu `sensor.bil_batteri_estimat` (BMW's seneste % plus laderens kWh siden), som følger med under opladning. BMW's eget tal opdateres ikke under opladning, så 28/11 blev bilen ladet til 95 % i stedet for 80 %. Er estimatet unavailable, bruges BMW's tal med "(BMW, kan være gammelt)".

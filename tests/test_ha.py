@@ -399,7 +399,7 @@ def test_vagten_tillader_kun_home_assistants_bilstier():
         "http://192.168.128.2:8123/api/services/input_boolean/toggle",
         "http://192.168.128.2:8123/api/services/input_datetime/set_datetime",
         "http://192.168.128.2:8123/api/services/calendar/delete_event",
-        "http://192.168.128.2:8123/api/services/script/turn_on",
+        "http://192.168.128.2:8123/api/services/script/turn_off",  # turn_on kun til sov godt (ha.SKRIV)
         "http://192.168.128.2:8123/api/config",
         "http://192.168.1.50:8123/api/states/sensor.x",  # anden adresse på hjemmenettet
         "http://evil.example.com/api/services/button/press",

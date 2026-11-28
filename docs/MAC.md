@@ -174,7 +174,14 @@ Skriv til botten:
 - *"oplad nu"*, *"stop opladning"*: laderen kan være et minut om at reagere
 - Spørg om forbruget med almindelige ord, fx *"hvad har opladningen kostet?"*, *"hvor meget CO2 i år?"* eller *"er det billigt at lade nu?"*: kWh, kr., CO2 og kr./kWh pr. periode (fra 26/11-2026) og strømprisen nu
 
-Fri tekst ("hvad koster strømmen i aften?") besvares af `claude -p` med Home Assistant (kun læsning). Den må også styre bilen med de samme ting, men intet andet. Fjern adgangen igen ved at slette tokenet i Home Assistant.
+Varmepumpen (Panasonic i stuen, `climate.stue_stue`, og "sov godt"-scriptet fra Smarthome-projektet) forstår almindelig tale:
+- *"hvor varmt er der?"*, *"er varmen tændt?"*, *"hvad har varmen kostet i dag?"*: inde, ude, mål, drift, effekt, kWh og kr. i dag og i går
+- *"tænd varmen"*, *"sluk varmen"*, *"sæt varmen til 22"*, *"skru op for varmen"*, *"lidt koldere"*
+- *"vi lufter ud"* (kun blæs, høj) og *"færdig med at lufte ud"* (varme igen)
+- *"sov godt"* eller *"vi går i seng"*: slukker i 45 min og tænder igen som før. *"tænd varmen igen"* stopper det
+- *"varmepumpen larmer"* (stille), *"kør kraftig"*, *"blæser på lav"*
+
+Fri tekst ("hvad koster strømmen i aften?", "sluk varmen kl. 22") besvares af `claude -p` med Home Assistant (kun læsning). Den må også styre bilen og varmepumpen med de samme ting, men intet andet. Fjern adgangen igen ved at slette tokenet i Home Assistant.
 
 ## Tjekliste til første døgn
 

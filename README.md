@@ -85,7 +85,7 @@ Mens en madplan er i gang, går beskederne til AI'en i stedet.
 
 ### Bilen fra telefonen (Home Assistant)
 
-Har I Home Assistant med EV Smart Charging, klarer botten også bilen uden AI: *"bil"* (status), *"klar 7"* (klar næste morgen, kun denne gang), *"klar normal"*, *"lad til 90"*, *"klar 5/12 5:30 100%"* (planlagt dag), *"forvarm nu"*, *"oplad nu"* og *"stop opladning"*. Opsætning: [docs/MAC.md](docs/MAC.md) trin 9.
+Har I Home Assistant med EV Smart Charging, klarer botten også bilen uden AI: *"bil"* (status), *"klar 7"* (klar næste morgen, kun denne gang), *"klar normal"*, *"lad til 90"*, *"klar 5/12 5:30 100%"* (planlagt dag), *"forvarm nu"*, *"oplad nu"* og *"stop opladning"*. Varmepumpen forstår almindelig tale: *"hvor varmt er der?"*, *"sluk varmen"*, *"sæt varmen til 22"*, *"vi lufter ud"*, *"sov godt"*. Opsætning: [docs/MAC.md](docs/MAC.md) trin 9.
 
 ## Kom i gang
 

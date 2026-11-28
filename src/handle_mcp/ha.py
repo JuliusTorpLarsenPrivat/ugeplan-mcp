@@ -1,4 +1,4 @@
-"""Bilen i Home Assistant: status, klar-tid, ladeniveau, planlagte undtagelser, forvarmning og
+"""Bilen (og varmepumpen, se varme.py) i Home Assistant: status, klar-tid, ladeniveau, planlagte undtagelser, forvarmning og
 "oplad nu" fra Telegram og fra `claude -p`.
 
 Julius, 26/11-2026: "så man kan skrive derinde at den skal x, y og z, og få status for det ene
@@ -18,6 +18,7 @@ de enheder, der står nedenfor (SKRIV):
   - oplad nu / stop: trykker på EV Smart Chargings knapper for manuel start og stop
 27/11-2026: "Undtagelse i nat" (input_boolean.undtagelse_i_nat) bruges ikke længere; kun kalenderen.
 
+Varmepumpen (varme.py): tilstand, temperatur, blæser, styrke og "sov godt" på `climate.stue_stue`.
 Intet andet i Home Assistant kan ændres herfra (se også vagt.py, der kun tillader netop disse
 adresser). Adressen ligger i home_assistant.json i datamappen, tokenet i nøgleringen.
 """
@@ -85,10 +86,21 @@ FORBRUG = (
 FORBRUG_FRA = "26/11-2026"
 FORBRUG_START = date(2026, 11, 26)
 
+# Varmepumpen (Panasonic Etherea i stuen, varme.py). Julius 28/11-2026: begge telefoner må styre.
+VARME = "climate.stue_stue"
+VARME_INDE = "sensor.stue_stue_inside_temperature"
+VARME_EFFEKT = "sensor.stue_stue_current_extrapolated_power"
+VARME_KWH = "sensor.stue_stue_daily_energy"
+VARME_KR = "sensor.varme_kr_i_dag"  # utility meter; last_period = i går
+SOV_GODT = "script.varme_sov_godt"
+SOV_TIMER = "timer.varme_sov_godt"
+SOV_MINUTTER = "input_number.varme_sov_godt_minutter"
+VARME_LAESER = (VARME, VARME_INDE, VARME_EFFEKT, VARME_KWH, VARME_KR, SOV_TIMER, SOV_MINUTTER)
+
 LAESER = (
     *FASTE, SLUTTID, LADNING, SAT_TIL, BATTERI_ESTIMAT, BATTERI, ELPRIS, LADER,
     LAD_STANDARD, MAAL_I_NAT, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE,
-    ELPRIS_CO2, *(e for _, *enheder in FORBRUG for e in enheder),
+    ELPRIS_CO2, *(e for _, *enheder in FORBRUG for e in enheder), *VARME_LAESER,
 )  # fmt: skip
 KNAPPER = (START, STOP)
 # Det eneste, der kan ændres herfra: service -> de enheder, den må bruges på. Se også vagt.HA_STIER.
@@ -98,6 +110,12 @@ SKRIV = {
     "input_number/set_value": {LAD_STANDARD, FORVARM_UNDER},
     "calendar/create_event": {KALENDER},
     "button/press": set(KNAPPER),
+    "climate/set_hvac_mode": {VARME},
+    "climate/set_temperature": {VARME},
+    "climate/set_fan_mode": {VARME},
+    "climate/set_preset_mode": {VARME},
+    "script/turn_on": {SOV_GODT},
+    "timer/finish": {SOV_TIMER},
 }
 WS_SKRIV = {"calendar/event/delete": {KALENDER}}  # websocket: kun sletning i bilens kalender
 LAD_MIN, LAD_MAX = 50, 100  # som hjælperne i Home Assistant (trin på 5)

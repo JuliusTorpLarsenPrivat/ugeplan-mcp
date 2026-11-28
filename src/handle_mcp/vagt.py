@@ -8,7 +8,7 @@ sendes, tjekker vagten to ting:
 2. At stien ikke indeholder ord for bestilling, betaling eller ændring af levering.
    ugeplan-mcp må kun læse og ændre antal i kurven. Mennesket betaler altid selv.
 
-Undtagelse: jeres egen Home Assistant på hjemmenettet, kun til bilen (se HA_STIER og ha.py).
+Undtagelse: jeres egen Home Assistant på hjemmenettet, kun til bilen og varmepumpen (se HA_STIER og ha.py).
 
 Vagten er bevidst dum og streng: hellere et kald for meget afvist end et for lidt.
 """
@@ -64,7 +64,9 @@ class VagtFejl(Exception):
 HA_STIER = re.compile(
     r"^/api/(?:states/[a-z_]+\.[a-z0-9_]+|calendars/calendar\.[a-z0-9_]+"
     r"|services/(?:input_boolean/turn_on|input_boolean/turn_off"
-    r"|input_number/set_value|calendar/create_event|button/press))$"
+    r"|input_number/set_value|calendar/create_event|button/press"
+    r"|climate/set_hvac_mode|climate/set_temperature|climate/set_fan_mode|climate/set_preset_mode"
+    r"|script/turn_on|timer/finish))$"
 )  # hvilke enheder hver service må bruges på, står i ha.SKRIV (og ha.WS_SKRIV for websocket)
 
 

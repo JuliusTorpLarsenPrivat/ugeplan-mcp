@@ -10,7 +10,8 @@ Regler:
   - Højst MAKS_PR_TIME kørsler i timen for hele husstanden. Derefter en kort besked.
   - Kun værktøjer, der læser. Claude kan herfra hverken ændre kurven, planen, profilen eller
     beholdningen, og intet i ugeplan-mcp kan bestille eller betale. Eneste undtagelse er bilen
-    (bil_*-værktøjerne), når Home Assistant er sat op; resten af Home Assistant kun læsning.
+    (bil_*-værktøjerne) og varmepumpen (varme_*), når Home Assistant er sat op; resten af Home
+    Assistant kun læsning.
   - Kører på brugerens eget Claude-abonnement (login i Claude Code). En API-nøgle i miljøet
     fjernes, så der aldrig betales pr. kald ved en fejl.
   - Slås fra med {"fra": true} i claude_p.json i datamappen, eller ved at `claude` ikke findes.
@@ -78,6 +79,8 @@ UGEPLAN_LAES = (
 # Bilen (ugeplan-mcp's egne værktøjer, se ha.py): de eneste ændringer i Home Assistant, Claude
 # kan lave herfra. Julius 26/11-2026: claude -p må læse og styre bilen.
 UGEPLAN_BIL = ("bil_status", "bil_forbrug", "bil_klar", "bil_lad_til", "bil_planlaeg", "bil_forvarm", "bil_forvarmning", "bil_oplad")
+# Varmepumpen (varme.py). Julius 28/11-2026: claude -p må læse og styre den, fra begge telefoner.
+UGEPLAN_VARME = ("varme_status", "varme_styr", "varme_sov_godt")
 
 # Home Assistant-MCP'en (samme som i AI-appen), kun værktøjer der læser. ha_call_service og
 # alle andre skrivende værktøjer gives aldrig.
@@ -92,7 +95,8 @@ SYSTEM = """Du svarer husstanden på Telegram gennem deres madplans-bot. Ingen k
 - Læs de seneste beskeder: korte beskeder som "slet den igen", "nej, kl. 9 i stedet" eller "ja" handler om det, der lige er skrevet om. Handler det om bilen, så gør det med bil_*-værktøjerne (fx "slet undtagelsen igen" = bil_klar("normal")). Er det stadig uklart, så spørg kort i dit svar i stedet for at gætte.
 - Start ikke svaret med "Svar til …": skriv bare svaret.
 - Vil de i gang med en ny madplan eller ugens indkøb nu (fx "kan vi gøre klar til at bestille varer igen?", "lav en madplan", "vi skal handle ind til næste uge"), så svar kun med START_MADPLAN og intet andet. Så starter madplanen af sig selv. Ikke når de bare spørger til den nuværende plan, en opskrift eller hvad de skal have i aften.
-- Home Assistant (homeassistant-værktøjerne) kan du kun læse i, fx elpris, varmepumpe og temperaturer. Andet end bilen kan ikke ændres herfra."""
+- Varmepumpen (Panasonic i stuen, luft-til-luft): varme_status giver temperatur inde og ude, mål, drift, effekt, kWh og kr. i dag og i går og "sov godt". varme_styr sætter tilstand ("varme", "luft ud" = kun blæs uden varme, "sluk"), temperatur (16–30 °C), blæser (auto/lav/mellem/høj) og styrke (normal/stille/kraftig). varme_sov_godt slukker den i ca. 45 min, så den ikke larmer, mens de falder i søvn, og tænder den igen som før (til=False stopper det og tænder nu). Køl, affugt og auto bruges ikke. Forstå almindelig tale: "det er koldt herinde" = lidt varmere (+1 °C), "vi lufter ud" = luft ud, "færdig med at lufte ud" = varme, "vi går i seng" = sov godt. Kan ikke planlægges til senere: beder de om noget på et bestemt tidspunkt ("sluk varmen kl. 22"), så sig, at det kun kan gøres nu, eller med "sov godt". Sig bagefter kort, hvad der er sat; Panasonic-skyen kan være et halvt minut om at vise det.
+- Home Assistant (homeassistant-værktøjerne) kan du kun læse i, fx elpris og temperaturer. Kun bilen og varmepumpen kan ændres herfra, med deres egne værktøjer."""
 
 
 def _indstillinger() -> dict:
@@ -160,7 +164,7 @@ def mcp_konfig() -> dict:
 def tilladte_vaerktoejer(konfig: dict) -> list[str]:
     ud = [f"mcp__ugeplan__{v}" for v in UGEPLAN_LAES]
     if ha.sat_op():
-        ud += [f"mcp__ugeplan__{v}" for v in UGEPLAN_BIL]
+        ud += [f"mcp__ugeplan__{v}" for v in UGEPLAN_BIL + UGEPLAN_VARME]
     if "garmin" in konfig["mcpServers"]:
         ud.append("mcp__garmin")  # Garmin-serveren kan kun læse
     if "homeassistant" in konfig["mcpServers"]:

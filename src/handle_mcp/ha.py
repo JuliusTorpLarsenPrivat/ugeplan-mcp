@@ -55,6 +55,9 @@ LADNING = "sensor.ev_smart_charging_charging"
 # laderen"): laderens live-status først, BMW's stik kun som reserve, når data er friske. Brug aldrig
 # EV Smart Chargings switch (en indstilling) eller BMW's stik direkte.
 SAT_TIL = "binary_sensor.bil_sat_til_laderen"
+# Batteri-%: estimatet først (BMW's seneste % + laderens kWh siden / 0,44, højst 100). BMW's eget
+# tal opdateres ikke under opladning (28/11: ladet til 95 % i stedet for 80 %), så det er kun reserve.
+BATTERI_ESTIMAT = "sensor.bil_batteri_estimat"
 BATTERI = "sensor.i3s_120_battery_ev_displayed_state_of_charge"
 ELPRIS = "sensor.energi_data_service"
 LADER = "sensor.lader_status_connector"
@@ -83,7 +86,7 @@ FORBRUG_FRA = "26/11-2026"
 FORBRUG_START = date(2026, 11, 26)
 
 LAESER = (
-    *FASTE, SLUTTID, LADNING, SAT_TIL, BATTERI, ELPRIS, LADER,
+    *FASTE, SLUTTID, LADNING, SAT_TIL, BATTERI_ESTIMAT, BATTERI, ELPRIS, LADER,
     LAD_STANDARD, MAAL_I_NAT, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE,
     ELPRIS_CO2, *(e for _, *enheder in FORBRUG for e in enheder),
 )  # fmt: skip
@@ -338,6 +341,7 @@ class Status:
     auto_forvarm: bool | None = None
     forvarm_under: float | None = None
     ude: float | None = None
+    batteri_fra_bmw: bool = False  # estimatet var unavailable: BMW's tal, kan være gammelt
 
     def tekst(self) -> str:
         hvilken = "undtagelse, kun denne gang" if self.planlagt_undtagelse else f"fast tid {self.dag}"
@@ -352,7 +356,7 @@ class Status:
         else:
             linjer.append("Ingen opladning planlagt.")
         if self.batteri is not None:
-            linjer.append(f"Batteri: {self.batteri:.0f} %.")
+            linjer.append(f"Batteri: {self.batteri:.0f} %" + (" (BMW, kan være gammelt)." if self.batteri_fra_bmw else "."))
         if self.elpris is not None:
             linjer.append(f"Strøm nu: {self.elpris:.2f} kr./kWh".replace(".", ",", 1) + ".")
         lader_nede = self.lader in ("unavailable", "unknown")
@@ -375,9 +379,9 @@ class Status:
 async def status(nu: datetime | None = None) -> Status:
     nu = nu or datetime.now(TIDSZONE)
     dag = naeste_morgen(nu)
-    enheder = (FASTE[dag.weekday()], SLUTTID, LADNING, SAT_TIL, BATTERI, ELPRIS, LADER, MAAL_I_NAT, LAD_STANDARD, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE)
+    enheder = (FASTE[dag.weekday()], SLUTTID, LADNING, SAT_TIL, BATTERI_ESTIMAT, BATTERI, ELPRIS, LADER, MAAL_I_NAT, LAD_STANDARD, KOMMENDE, AUTO_FORVARM, FORVARM_UNDER, UDE)
     *navne, begivenheder = await asyncio.gather(*(tilstand(e) for e in enheder), _begivenheder(dag, dag + timedelta(days=1)))
-    fast_t, slut, ladning, tilkoblet, batteri, elpris, lader, maal, standard, kommende, auto, under, ude = navne
+    fast_t, slut, ladning, tilkoblet, estimat, batteri, elpris, lader, maal, standard, kommende, auto, under, ude = navne
     b = _paa_dato(begivenheder, dag)
     if b and (m := BEGIVENHED.match(str(b["summary"]))):
         tid = f"{int(m.group(1)):02d}:{m.group(2)}"
@@ -394,7 +398,8 @@ async def status(nu: datetime | None = None) -> Status:
         stop=_tid(attr.get("charging_stop_time")),
         lader_nu=ladning.get("state") == "on",
         tilkoblet={"on": True, "off": False}.get(tilkoblet.get("state")),
-        batteri=_tal(batteri.get("state")),
+        batteri=_tal(estimat.get("state")) if _tal(estimat.get("state")) is not None else _tal(batteri.get("state")),
+        batteri_fra_bmw=_tal(estimat.get("state")) is None and _tal(batteri.get("state")) is not None,
         elpris=_tal(elpris.get("state")),
         lader=str(lader.get("state")),
         maal=_tal(maal.get("state")),

@@ -201,7 +201,7 @@
     "open_world_hint": false,
     "read_only_hint": true
    },
-   "description": "Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid eller\nundtagelse fra kalenderen), mål i nat og standard i %,\nplanlagt opladning, om den lader nu, batteri i %, elpris nu (kr./kWh), laderen, forvarmning,\nudetemperatur og de næste planlagte undtagelser. `tekst` er et færdigt svar til husstanden.",
+   "description": "Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid eller\nundtagelse fra kalenderen), mål i nat og standard i %,\nplanlagt opladning, om den lader nu, batteri i % (estimat under opladning; `batteri_fra_bmw` = BMW's tal, kan være gammelt), elpris nu (kr./kWh), laderen, forvarmning,\nudetemperatur og de næste planlagte undtagelser. `tekst` er et færdigt svar til husstanden.",
    "input_schema": {
     "properties": {},
     "title": "bil_statusArguments",

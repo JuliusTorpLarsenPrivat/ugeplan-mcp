@@ -28,6 +28,7 @@ class FalskHA:
             ha.SLUTTID: {"state": "06:15"},
             ha.LADNING: {"state": "off", "attributes": {"charging_is_planned": True, "charging_start_time": "2026-11-27T03:00:00+01:00", "charging_stop_time": "2026-11-27T06:00:00+01:00"}},
             ha.SAT_TIL: {"state": "on"},
+            ha.BATTERI_ESTIMAT: {"state": "44.6"},
             ha.BATTERI: {"state": "44.6"},
             ha.ELPRIS: {"state": "4.0483"},
             ha.LADER: {"state": "Available"},
@@ -532,3 +533,48 @@ async def test_sat_til_kommer_kun_fra_den_faelles_kilde(falsk_ha):
         assert e not in ha.LAESER
         with pytest.raises(ha.HAFejl):
             await ha.tilstand(e)
+
+
+# --- batteri-% fra estimatet (v0.42.1) -----------------------------------------------------------
+# 28/11: BMW's % opdateres ikke under opladning, så bilen blev ladet til 95 % i stedet for 80 %.
+
+
+async def test_batteri_fra_estimatet_under_opladning(falsk_ha):
+    falsk_ha.tilstande[ha.BATTERI]["state"] = "62.0"  # BMW's sidste tal, før opladningen
+    falsk_ha.tilstande[ha.BATTERI_ESTIMAT]["state"] = "79.6"
+    s = await ha.status(NU)
+    assert s.batteri == 79.6 and not s.batteri_fra_bmw
+    assert "Batteri: 80 %." in s.tekst().splitlines()
+
+
+@pytest.mark.parametrize("estimat", ["unavailable", "unknown"])
+async def test_batteri_uden_estimat_bruger_bmw_og_siger_det(falsk_ha, estimat):
+    falsk_ha.tilstande[ha.BATTERI_ESTIMAT]["state"] = estimat
+    falsk_ha.tilstande[ha.BATTERI]["state"] = "62.0"
+    s = await ha.status(NU)
+    assert s.batteri == 62.0 and s.batteri_fra_bmw
+    assert "Batteri: 62 % (BMW, kan være gammelt)." in s.tekst().splitlines()
+
+
+async def test_batteri_ingen_af_dem(falsk_ha):
+    falsk_ha.tilstande[ha.BATTERI_ESTIMAT]["state"] = "unavailable"
+    falsk_ha.tilstande[ha.BATTERI]["state"] = "unavailable"
+    s = await ha.status(NU)
+    assert s.batteri is None and not s.batteri_fra_bmw and "Batteri" not in s.tekst()
+
+
+async def test_estimatet_kan_kun_laeses(falsk_ha):
+    assert ha.BATTERI_ESTIMAT in ha.LAESER
+    assert not [e for e in ha.SKRIV.values() if ha.BATTERI_ESTIMAT in e]
+    await ha.tilstand(ha.BATTERI_ESTIMAT)
+    assert falsk_ha.skrivninger() == []
+
+
+async def test_bil_status_vaerktoejet_giver_estimatet(falsk_ha):
+    falsk_ha.tilstande[ha.BATTERI_ESTIMAT]["state"] = "79.6"
+    ud = await server.bil_status()
+    assert ud["batteri"] == 79.6 and ud["batteri_fra_bmw"] is False and "Batteri: 80 %." in ud["tekst"]
+
+
+def test_claude_p_ved_at_estimatet_er_batteriet():
+    assert "batteri (et estimat" in claude_p.SYSTEM

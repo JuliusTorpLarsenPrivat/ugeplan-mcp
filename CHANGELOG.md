@@ -1,5 +1,10 @@
 # Ændringer
 
+## 0.42.1 (28/11-2026)
+
+- **Batteri-% fra estimatet:** *"bil"*, `bil_status` og svar fra `claude -p` bruger nu `sensor.bil_batteri_estimat` (BMW's seneste % plus laderens kWh siden), som følger med under opladning. BMW's eget tal opdateres ikke under opladning, så 28/11 blev bilen ladet til 95 % i stedet for 80 %. Er estimatet unavailable, bruges BMW's tal med "(BMW, kan være gammelt)".
+- Estimatet kan kun læses herfra. Ingen nye værktøjer.
+
 ## 0.42.0 (28/11-2026)
 
 Fundet i brug 28/11 kl. 15.20: Maja skrev *"Hejsa, kan vi gøre klar til at bestille varer igen?"* og fik at vide, at hun skulle bede AI-assistenten i appen.

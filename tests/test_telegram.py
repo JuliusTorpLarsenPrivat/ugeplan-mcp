@@ -1,6 +1,7 @@
 """Telegram-botten testet mod en falsk Telegram (ingen rigtige beskeder sendes)."""
 
 import json
+import os
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -849,3 +850,85 @@ def test_claude_findes_ikke_giver_det_gamle_svar(monkeypatch):
     monkeypatch.setattr(claude_p.Path, "home", lambda: __import__("pathlib").Path("/findes/ikke"))
     monkeypatch.setattr(claude_p.Path, "is_file", lambda self: False)
     assert claude_p.find_claude() is None and not claude_p.slaaet_til()
+
+
+# --- madplan fra Telegram i almindelig tale ----------------------------------------------------
+
+
+@pytest.fixture
+def baggrund(claude, monkeypatch):
+    from handle_mcp import claude_p
+
+    startet: list[list[str]] = []
+
+    def falsk_start(argv):
+        startet.append(argv)
+        return os.getpid()  # en proces, der lever
+
+    monkeypatch.setattr(claude_p, "START", falsk_start)
+    claude.svar = claude_p.START_MADPLAN
+    return startet
+
+
+async def test_madplan_startes_fra_almindelig_tale(tg, claude, baggrund):
+    from handle_mcp import claude_p
+
+    par(tg, 1, 2)
+    await telegram.hent_og_haandter(0)
+    tg.besked(2, "Hejsa, kan vi gøre klar til at bestille varer igen?", navn="Maja")
+    assert (await telegram.hent_og_haandter(0))[-1] == "madplan startet af Maja via claude -p"
+    argv = baggrund[-1]
+    assert "bestille varer igen" in argv[2] and "ugeplan_forloeb" in argv[2]
+    assert argv[argv.index("--allowedTools") + 1].split(",")[0] == "mcp__ugeplan"
+    assert argv[argv.index("--tools") + 1] == ""
+    konfig = json.loads(argv[argv.index("--mcp-config") + 1])
+    assert konfig["mcpServers"]["ugeplan"]["env"][claude_p.HEADLESS_ENV] == claude_p.HEADLESS_MADPLAN
+    tekst = claude_p.MADPLAN_TEKST.format(navn="Maja")
+    assert (1, tekst) in tg.sendt and (2, tekst) in tg.sendt  # begge ved, at den er i gang
+    assert claude_p.madplan_koerer()
+
+
+async def test_svar_under_madplanen_gaar_til_den(tg, claude, baggrund):
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    tg.besked(1, "lav en madplan")
+    await telegram.hent_og_haandter(0)
+    kald = len(claude.kald)
+    tg.besked(1, "vi har agurk og mel")
+    assert (await telegram.hent_og_haandter(0))[-1].endswith(" gemt")
+    assert len(claude.kald) == kald and tg.sendt[-1] == (1, "Modtaget.")  # ikke claude -p, ikke beholdningen
+    assert len(baggrund) == 1
+
+
+async def test_madplan_der_ikke_kan_starte_giver_besked(tg, claude, monkeypatch):
+    from handle_mcp import claude_p
+
+    def fejl(argv):
+        raise OSError("findes ikke")
+
+    monkeypatch.setattr(claude_p, "START", fejl)
+    claude.svar = claude_p.START_MADPLAN
+    par(tg, 1)
+    await telegram.hent_og_haandter(0)
+    tg.besked(1, "lav madplan til næste uge")
+    assert (await telegram.hent_og_haandter(0))[-1].endswith(": kunne ikke starte")
+    assert tg.sendt[-1] == (1, claude_p.MADPLAN_FEJL_TEKST)
+
+
+def test_madplan_der_har_koert_for_laenge_regnes_ikke(tg, monkeypatch):
+    from handle_mcp import claude_p, lokal
+
+    stoppet = []
+    monkeypatch.setattr(claude_p.os, "kill", lambda pid, sig: stoppet.append(sig))
+    monkeypatch.setattr(claude_p, "_lever", lambda pid: True)
+    lokal.skriv(claude_p.FIL, {"madplan": {"pid": 123, "start": 0}})
+    assert not claude_p.madplan_koerer(nu=claude_p.MADPLAN_MAKS_SEK + 1)
+    assert stoppet
+
+
+def test_madplanen_taeller_som_ai_er_i_gang(tg, monkeypatch):
+    from handle_mcp import lokal
+
+    monkeypatch.setenv("UGEPLAN_HEADLESS", "madplan")
+    lokal.marker_claude_aktiv()
+    assert lokal.sekunder_siden_claude() is not None

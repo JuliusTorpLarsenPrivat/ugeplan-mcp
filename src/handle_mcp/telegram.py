@@ -469,7 +469,7 @@ def claude_lytter() -> bool:
 def plan_i_gang() -> bool:
     """Arbejder AI'en lige nu, eller venter en plan på "bestil"? Så går beskeder til AI'en."""
     try:
-        return claude_lytter() or madplan.eneste_ventende() is not None or _spoergsmaal_uden_plan()
+        return claude_lytter() or claude_p.madplan_koerer() or madplan.eneste_ventende() is not None or _spoergsmaal_uden_plan()
     except Exception:  # noqa: BLE001  i tvivl: lad AI'en tage beskeden
         return True
 
@@ -493,7 +493,7 @@ def _spoergsmaal_uden_plan() -> bool:
 
 def kvittering() -> str:
     """Kort "Modtaget." når Claude er i gang. Ellers siges det, så ingen venter forgæves på et svar."""
-    return "Modtaget." if claude_lytter() else IKKE_LYTTER
+    return "Modtaget." if claude_lytter() or claude_p.madplan_koerer() else IKKE_LYTTER
 
 
 async def haandter(opdatering: dict) -> str | None:
@@ -586,6 +586,15 @@ async def _fri_tekst(chat_id: str, navn: str, tekst: str) -> str | None:
         await _videresend(chat_id, navn, tekst)
         await _svar(chat_id, claude_p.FEJL_TEKST)
         return f"fri tekst fra {navn}: claude -p fejlede"
+    if svar.strip(" .\n") == claude_p.START_MADPLAN:  # de vil i gang med en madplan
+        _gem_besked(navn, tekst, laest=True)
+        await _videresend(chat_id, navn, tekst)
+        if claude_p.start_madplan(navn, tekst):
+            await send_fra_botten(claude_p.MADPLAN_TEKST.format(navn=navn))
+            return f"madplan startet af {navn} via claude -p"
+        await _svar(chat_id, claude_p.MADPLAN_FEJL_TEKST)
+        _gem_besked("handle-botten", f"Svar til {navn}: {claude_p.MADPLAN_FEJL_TEKST}", laest=True)
+        return f"madplan fra {navn}: kunne ikke starte"
     _gem_besked(navn, tekst, laest=True)  # besvaret: AI-assistenten skal ikke tage den igen
     await _videresend(chat_id, navn, tekst)
     await _svar(chat_id, svar)  # kun til den, der spurgte (svaret kan have helbredsdata)

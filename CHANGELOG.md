@@ -1,5 +1,15 @@
 # Ændringer
 
+## 0.42.0 (28/11-2026)
+
+Fundet i brug 28/11 kl. 15.20: Maja skrev *"Hejsa, kan vi gøre klar til at bestille varer igen?"* og fik at vide, at hun skulle bede AI-assistenten i appen.
+
+- **Madplan fra Telegram i almindelig tale:** vil I i gang med en madplan (*"kan vi gøre klar til at bestille varer igen?"*, *"lav en madplan"*, *"vi skal handle ind til næste uge"*), forstår `claude -p` det og starter hele forløbet i baggrunden. Begge telefoner får besked, og så kommer det første spørgsmål om køleskabet, præcis som når I beder om det i appen.
+- Madplanen kører i sit eget `claude -p` med hele ugeplan-serveren (den kan stadig hverken bestille eller betale), Garmin og Home Assistant kun læsning. Kun én ad gangen, højst 6 timer. Svarer ingen i 3 timer, siger den til og stopper.
+- Mens den kører, går jeres svar til madplanen ("Modtaget."), ikke til `claude -p` eller beholdningen.
+- Kan den ikke starte, står der det, og at I kan bede AI-assistenten i appen. Fejl fra `claude` skrives i `claude-p/madplan.log` i datamappen.
+- Ingen genstart af appen (ingen nye værktøjer).
+
 ## 0.41.1 (27/11-2026)
 
 Fundet i den rigtige test 27/11 kl. 21.10: *"Hvad kostede det at lade i nat"* fik hele forbrugstabellen.

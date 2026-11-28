@@ -491,7 +491,7 @@ async def leveringstider(butik: str = "nemlig", dage: int = 5) -> Any:
 async def bil_status() -> Any:
     """Bilen (BMW i3s) i Home Assistant: hvornår den skal være klar næste morgen (fast tid eller
     undtagelse fra kalenderen), mål i nat og standard i %,
-    planlagt opladning, om den lader nu, batteri i %, elpris nu (kr./kWh), laderen, forvarmning,
+    planlagt opladning, om den lader nu, batteri i % (estimat under opladning; `batteri_fra_bmw` = BMW's tal, kan være gammelt), elpris nu (kr./kWh), laderen, forvarmning,
     udetemperatur og de næste planlagte undtagelser. `tekst` er et færdigt svar til husstanden."""
     try:
         s = await ha.status()

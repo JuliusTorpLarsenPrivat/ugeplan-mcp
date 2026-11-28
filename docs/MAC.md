@@ -114,6 +114,8 @@ Fjern derfor ugeplan-serveren fra AI-appen på den anden computer, når Mac'en k
 
 Uden dette svarer botten "AI-assistenten er ikke i gang", når I skriver et spørgsmål mellem madplanerne. Med Claude Code installeret på Mac'en svarer den selv med det samme, fx på "hvad skal vi have i aften?" eller "hvordan sov jeg i nat?". Det kører på dit Claude-abonnement (Pro eller Max), ikke på API'en.
 
+Skriver I, at I vil i gang med en madplan ("kan vi gøre klar til at bestille varer igen?"), starter den også hele madplanen på Telegram i baggrunden, ligesom når du beder om den i appen. Den kan stadig hverken bestille eller betale.
+
 Claude-appens indbyggede Code-fane giver ingen `claude`-kommando i Terminal. Installér derfor Claude Code med Anthropics officielle installationsscript. Det lægger `claude` i `~/.local/bin` og opdaterer sig selv:
 
 ```zsh

@@ -14,6 +14,11 @@ Regler:
   - Kører på brugerens eget Claude-abonnement (login i Claude Code). En API-nøgle i miljøet
     fjernes, så der aldrig betales pr. kald ved en fejl.
   - Slås fra med {"fra": true} i claude_p.json i datamappen, eller ved at `claude` ikke findes.
+
+Madplan fra Telegram: vil husstanden i gang med en madplan ("kan vi gøre klar til at bestille
+varer igen?"), svarer Claude kun START_MADPLAN. Så starter lytteren et selvstændigt `claude -p`
+i baggrunden, som kører hele forløbet (ugeplan_forloeb) med husstanden på Telegram, ligesom AI-
+assistenten i appen. Kun én ad gangen, højst MADPLAN_MAKS_SEK. Det kan heller ikke bestille eller betale.
 """
 
 from __future__ import annotations
@@ -37,6 +42,9 @@ FIL = "claude_p"
 MAKS_PR_TIME = 20
 TIMEOUT_SEK = 240
 HEADLESS_ENV = "UGEPLAN_HEADLESS"  # sat for serverne, som claude -p starter
+HEADLESS_MADPLAN = "madplan"  # værdien for madplanen i baggrunden: den tæller som "AI'en er i gang"
+START_MADPLAN = "START_MADPLAN"
+MADPLAN_MAKS_SEK = 6 * 3600
 HISTORIK = 10  # så mange tidligere beskeder får Claude med som sammenhæng
 SVAR_TIL = re.compile(r"^\s*(?:svar til [^:\n]{1,40}:\s*)+", re.I)  # bottens egne svar gemmes med det præfiks
 
@@ -45,6 +53,8 @@ GRAENSE_TEKST = (
     "Beskeden er gemt til AI-assistenten. Prøv igen om lidt."
 )
 FEJL_TEKST = "Jeg kunne ikke svare lige nu. Beskeden er gemt til AI-assistenten."
+MADPLAN_TEKST = "{navn} har sat en ny madplan i gang. Om lidt kommer det første spørgsmål her."
+MADPLAN_FEJL_TEKST = 'Jeg kunne ikke starte madplanen herfra. Bed AI-assistenten i appen om at "lave madplan".'
 
 # Kun værktøjer, der læser. ugeplan_forloeb er udeladt: den sætter et madplansforløb i gang,
 # som kræver skrivende værktøjer og svar fra husstanden.
@@ -81,6 +91,7 @@ SYSTEM = """Du svarer husstanden på Telegram gennem deres madplans-bot. Ingen k
 - Bilen (BMW i3s): bil_status viser klar-tid, mål i nat, planlagt opladning, batteri, elpris, forvarmning og planlagte undtagelser. bil_klar sætter, hvornår bilen skal være klar næste morgen (kun denne gang, evt. med %), eller "normal" for tilbage til fast tid (fx "i morgen først kl 8" = bil_klar("08:00")). bil_lad_til sætter ladeniveauet hver nat eller kun i nat. bil_planlaeg lægger en undtagelse en bestemt dato. Én undtagelse pr. dag; en ny erstatter den gamle. bil_forvarm starter klimaanlægget nu; bil_forvarmning slår automatikken til/fra og sætter temperaturgrænsen. bil_oplad starter eller stopper opladningen nu. bil_forbrug giver opladningens kWh, kr., CO2 og kr./kWh (sidste opladning, 24 t, i dag, 7 dage, denne måned, i år, i alt, i går og sidste måned; talt fra 26/11-2026) og strømprisen nu og de kommende timer: brug det til spørgsmål om pris, kWh og CO2 for opladning, og om det er billigt at lade nu. Svar kun på den periode, der spørges om, i én kort sætning, ikke hele tabellen. "I nat"/"i morges" er normalt seneste 24 t (eller i dag, hvis den er 0); sent på aftenen er det den opladning, der sluttede i morges, så brug sidste opladning eller i går og sig, hvad du har brugt. Har tabellen ikke perioden (fx "i oktober" eller "sidste uge"), så sig, hvad den har, og at der kun er tal fra 26/11. Skriv tal med dansk komma. Gør kun det, der bliver bedt om, og sig bagefter, hvad der er sat. De faste beskeder virker også uden dig: "bil", "klar 7", "klar 7 100%", "klar normal", "klar 5/12 5:30 100%", "undtagelser", "lad til 90", "lad til 100 i nat", "forvarm nu", "forvarmning til/fra", "oplad nu", "stop opladning".
 - Læs de seneste beskeder: korte beskeder som "slet den igen", "nej, kl. 9 i stedet" eller "ja" handler om det, der lige er skrevet om. Handler det om bilen, så gør det med bil_*-værktøjerne (fx "slet undtagelsen igen" = bil_klar("normal")). Er det stadig uklart, så spørg kort i dit svar i stedet for at gætte.
 - Start ikke svaret med "Svar til …": skriv bare svaret.
+- Vil de i gang med en ny madplan eller ugens indkøb nu (fx "kan vi gøre klar til at bestille varer igen?", "lav en madplan", "vi skal handle ind til næste uge"), så svar kun med START_MADPLAN og intet andet. Så starter madplanen af sig selv. Ikke når de bare spørger til den nuværende plan, en opskrift eller hvad de skal have i aften.
 - Home Assistant (homeassistant-værktøjerne) kan du kun læse i, fx elpris, varmepumpe og temperaturer. Andet end bilen kan ikke ændres herfra."""
 
 
@@ -247,3 +258,125 @@ async def besvar(navn: str, tekst: str, historik: list[dict], nu: str) -> str | 
         log.warning("claude -p fejlede (kode %s, %s)", kode, svar.get("subtype") if isinstance(svar, dict) else "?")
         return None
     return SVAR_TIL.sub("", str(svar["result"])).strip() or None
+
+
+# --- madplanen i baggrunden ---------------------------------------------------------------
+
+MADPLAN_SYSTEM = """Du kører madplanen for husstanden uden nogen i chatten her. Al snak med husstanden foregår på Telegram: følg forløbet fra ugeplan_forloeb, send med send_besked, og kald vent_paa_svar igen og igen, mens I venter på svar.
+- Der bestilles og betales aldrig herfra. Husstanden bestiller og betaler selv på butikkens hjemmeside.
+- Er der ikke kommet svar i 3 timer, så skriv kort på Telegram, at madplanen er sat på pause, og at de kan skrive "lav madplan" for at starte igen. Stop så.
+- Stop, når forløbet er færdigt."""
+
+
+def madplan_vaerktoejer(konfig: dict) -> list[str]:
+    """Hele ugeplan-serveren (den kan ikke bestille eller betale), Garmin og Home Assistant kun læsning."""
+    ud = ["mcp__ugeplan"]
+    if "garmin" in konfig["mcpServers"]:
+        ud.append("mcp__garmin")
+    if "homeassistant" in konfig["mcpServers"]:
+        ud += [f"mcp__homeassistant__{v}" for v in HA_LAES]
+    return ud
+
+
+def madplan_kommando(claude: str, navn: str, tekst: str) -> list[str]:
+    konfig = mcp_konfig()
+    for s in konfig["mcpServers"].values():
+        s["env"][HEADLESS_ENV] = HEADLESS_MADPLAN
+    prompt = f'{navn} skrev på Telegram: "{tekst}"\n\nLav ugens madplan: kald ugeplan_forloeb og følg forløbet trin for trin, til det er færdigt.'
+    return [
+        claude,
+        "-p",
+        prompt,
+        "--output-format",
+        "json",
+        "--mcp-config",
+        json.dumps(konfig),
+        "--strict-mcp-config",
+        "--tools",
+        "",
+        "--allowedTools",
+        ",".join(madplan_vaerktoejer(konfig)),
+        "--permission-mode",
+        "dontAsk",
+        "--no-session-persistence",
+        "--append-system-prompt",
+        MADPLAN_SYSTEM,
+    ]
+
+
+def _start_proces(argv: list[str]) -> int:
+    import subprocess
+
+    mappe = lokal.mappe() / "claude-p"
+    mappe.mkdir(parents=True, exist_ok=True)
+    log_fil = open(mappe / "madplan.log", "a", encoding="utf-8")  # noqa: SIM115  kun fejl fra claude
+    flag = {"creationflags": 0x08000000} if sys.platform == "win32" else {"start_new_session": True}  # intet vindue / egen gruppe
+    proc = subprocess.Popen(argv, cwd=mappe, env=_miljoe(), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=log_fil, **flag)
+    log_fil.close()
+    return proc.pid
+
+
+START = _start_proces  # byttes ud i testene
+
+
+def _lever(pid: int) -> bool:
+    if sys.platform == "win32":
+        import ctypes
+
+        k = ctypes.windll.kernel32  # type: ignore[attr-defined]
+        h = k.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not h:
+            return False
+        kode = ctypes.c_ulong()
+        ok = k.GetExitCodeProcess(h, ctypes.byref(kode))
+        k.CloseHandle(h)
+        return bool(ok) and kode.value == 259  # STILL_ACTIVE
+    try:
+        faerdig, _ = os.waitpid(pid, os.WNOHANG)  # vores eget barn: ryd op, når det er færdigt
+        return faerdig == 0
+    except ChildProcessError:
+        pass  # startet af en tidligere lytter
+    except OSError:
+        return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def madplan_koerer(nu: float | None = None) -> bool:
+    """Kører madplanen i baggrunden? En, der har kørt for længe, stoppes."""
+    nu = time.time() if nu is None else nu
+    m = _indstillinger().get("madplan") or {}
+    pid = m.get("pid")
+    if not pid or not _lever(int(pid)):
+        return False
+    if nu - float(m.get("start", 0)) > MADPLAN_MAKS_SEK:
+        try:
+            import signal
+
+            os.kill(int(pid), signal.SIGTERM)
+        except OSError:
+            pass
+        log.warning("madplanen i baggrunden kørte for længe og er stoppet")
+        return False
+    return True
+
+
+def start_madplan(navn: str, tekst: str, nu: float | None = None) -> bool:
+    """Start madplanen i baggrunden. False, hvis den ikke kunne starte (eller allerede kører)."""
+    if madplan_koerer(nu):
+        return False
+    claude = find_claude()
+    if not claude:
+        return False
+    try:
+        pid = START(madplan_kommando(claude, navn, tekst))
+    except OSError as fejl:
+        log.warning("madplanen kunne ikke starte: %s", type(fejl).__name__)
+        return False
+    d = _indstillinger()
+    d["madplan"] = {"pid": pid, "start": time.time() if nu is None else nu}
+    lokal.skriv(FIL, d)
+    return True
